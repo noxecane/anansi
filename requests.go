@@ -1,4 +1,4 @@
-package ext
+package anansi
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
-// ReadBody extracts the bytes in a request body without destroying the body buffer
+// ReadBody extracts the bytes in a request body without destroying the  contents of the body
 func ReadBody(r *http.Request) []byte {
 	var buffer bytes.Buffer
 
@@ -25,7 +25,6 @@ func ReadBody(r *http.Request) []byte {
 
 	body, err := ioutil.ReadAll(readSplit)
 	if err != nil {
-		// never run away with your wife
 		panic(err)
 	}
 
@@ -55,7 +54,11 @@ func ReadJSONBody(r *http.Request, schema ozzo.Validatable) {
 		// tell the use all the required attributes
 		err = schema.Validate()
 		if err != nil {
-			panic(BadRequestDataError("We could not validate your request", err))
+			panic(APIError{
+				Code:    http.StatusBadRequest,
+				Message: "We could not validate your request.",
+				Meta:    err,
+			})
 		} else {
 			return
 		}
@@ -63,21 +66,32 @@ func ReadJSONBody(r *http.Request, schema ozzo.Validatable) {
 
 	err = json.Unmarshal(body, &schema)
 	if err != nil {
-		panic(BadRequestError("We cannot understand your request"))
+		panic(APIError{
+			Code:    http.StatusBadRequest,
+			Message: "We cannot understand your request.",
+			Err:     err,
+		})
 	}
 
 	// validate parsed JSON data
 	err = schema.Validate()
 	if err != nil {
-		panic(BadRequestDataError("We could not validate your request", err))
+		panic(APIError{
+			Code:    http.StatusBadRequest,
+			Message: "We could not validate your request.",
+			Meta:    err,
+		})
 	}
 }
 
-// IdParam extracts a uint URL parameter from the given request
-func IdParam(r *http.Request, name string) uint {
+// IDParam extracts a uint URL parameter from the given request
+func IDParam(r *http.Request, name string) uint {
 	raw, err := strconv.ParseUint(chi.URLParam(r, name), 10, 32)
 	if err != nil {
-		panic(BadRequestError(fmt.Sprintf("%s must be an ID", name)))
+		panic(APIError{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf("%s must be an ID", name),
+		})
 	}
 	return uint(raw)
 }

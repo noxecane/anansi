@@ -3,21 +3,10 @@ package anansi
 import (
 	"bytes"
 	"encoding/json"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
-
-	"github.com/bxcodec/faker/v3"
 )
-
-type Dict map[string]interface{}
-
-func EnableFaker() {
-	rand.Seed(time.Now().Unix())
-	faker.SetGenerateUniqueValues(true)
-}
 
 // MockRequest records the http response to a generated request
 func MockRequest(req *http.Request, handler http.Handler) *httptest.ResponseRecorder {
@@ -27,13 +16,7 @@ func MockRequest(req *http.Request, handler http.Handler) *httptest.ResponseReco
 	return rr
 }
 
-// IsStatus confirms the status of a test response
-func IsStatus(t *testing.T, expected, actual int) {
-	if expected != actual {
-		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
-	}
-}
-
+// GetRequest creates a mock GET request
 func GetRequest(t *testing.T, path string) *http.Request {
 	req, err := http.NewRequest("GET", path, nil)
 	if err != nil {
@@ -46,6 +29,7 @@ func GetRequest(t *testing.T, path string) *http.Request {
 	return req
 }
 
+// SearchRequest creates a mock GET request with query parameters
 func SearchRequest(t *testing.T, path string, query map[string]string) *http.Request {
 	req, err := http.NewRequest("GET", path, nil)
 	if err != nil {
@@ -64,6 +48,7 @@ func SearchRequest(t *testing.T, path string, query map[string]string) *http.Req
 	return req
 }
 
+// PostRequest creates a mock POST request with a JSON body
 func PostRequest(t *testing.T, path string, body interface{}) *http.Request {
 	raw, err := json.Marshal(body)
 	if err != nil {
@@ -82,6 +67,7 @@ func PostRequest(t *testing.T, path string, body interface{}) *http.Request {
 	return req
 }
 
+// PutRequest creates a mock PUT request with a JSON body
 func PutRequest(t *testing.T, path string, body interface{}) *http.Request {
 	raw, err := json.Marshal(body)
 	if err != nil {
@@ -100,14 +86,19 @@ func PutRequest(t *testing.T, path string, body interface{}) *http.Request {
 	return req
 }
 
-// GetResponseBody creates a map of the JSON response body of off
-// a test request
-func GetResponseBody(t *testing.T, rr *httptest.ResponseRecorder) Dict {
+// GetResponseBody creates a map of the JSON response body of off a mock request
+func GetResponseBody(t *testing.T, rr *httptest.ResponseRecorder) map[string]interface{} {
 	var body map[string]interface{}
-	err := json.Unmarshal(rr.Body.Bytes(), &body)
-	if err != nil {
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}
 
 	return body
+}
+
+// IsStatus confirms the status of a test response
+func IsStatus(t *testing.T, expected, actual int) {
+	if expected != actual {
+		t.Errorf("Expected response code %d. Got %d\n", expected, actual)
+	}
 }

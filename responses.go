@@ -13,12 +13,12 @@ import (
 // sure what deserves to be logged gets logged
 func SendJSON(r *http.Request, w http.ResponseWriter, code int, v interface{}) {
 	raw, _ := json.Marshal(v)
-	entry := middleware.GetLogEntry(r).(*logs.ZeroLogEntry)
+	entry := middleware.GetLogEntry(r).(*ZeroLogEntry)
 
 	// log API responses
 	if v != nil {
 		entry.Log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
-			return ctx.RawJSON("response", ext.CompactJSON(raw))
+			return ctx.RawJSON("response", CompactJSON(raw))
 		})
 	}
 

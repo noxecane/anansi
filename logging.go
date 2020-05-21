@@ -3,6 +3,7 @@ package anansi
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -16,7 +17,7 @@ var kubeProbe = regexp.MustCompile("(?i)kube-probe|prometheus")
 // ZeroLogger is a wrapper around zero log for chi
 type ZeroLogger struct {
 	BaseLog zerolog.Logger
-	Env     string
+	Exclude []string
 }
 
 // ZeroLogEntry is an info event for request detauis
@@ -24,9 +25,24 @@ type ZeroLogEntry struct {
 	Log *zerolog.Logger
 }
 
+func NewLogger(service string) zerolog.Logger {
+	host, err := os.Hostname()
+	if err != nil {
+		panic(err)
+	}
+
+	return zerolog.
+		New(os.Stdout).
+		With().
+		Timestamp().
+		Str("service", service).
+		Str("host", host).
+		Logger()
+}
+
 // ZeroMiddleware creates a middleware for logging http Requests
-func ZeroMiddleware(log zerolog.Logger, env string) func(next http.Handler) http.Handler {
-	return middleware.RequestLogger(ZeroLogger{BaseLog: log, Env: env})
+func ZeroMiddleware(log zerolog.Logger, exclude ...string) func(next http.Handler) http.Handler {
+	return middleware.RequestLogger(ZeroLogger{BaseLog: log, Exclude: exclude})
 }
 
 // Panic logs final requests that failed with a panic
@@ -38,12 +54,13 @@ func (e *ZeroLogEntry) Panic(v interface{}, _ []byte) {
 }
 
 // Write logs the response metadata for a request
-func (e *ZeroLogEntry) Write(status, bytes int, elapsed time.Duration) {
+func (e *ZeroLogEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, extra interface{}) {
 	e.Log.
 		Info().
 		Int("status", status).
 		Int("length", bytes).
 		Float64("elapsed", float64(elapsed.Milliseconds())).
+		Interface("headers", formatHeaders(header)).
 		Msg("")
 }
 
@@ -63,9 +80,33 @@ func (l ZeroLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
 		})
 	}
 
+	formattedHeaders := formatHeaders(r.Header)
+
+	newLogger.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
+		return ctx.
+			Str("method", r.Method).
+			Str("remote_address", r.RemoteAddr).
+			Str("url", r.URL.String()).
+			Interface("headers", formattedHeaders)
+	})
+
+	requestBody := ReadBody(r)
+
+	if len(requestBody) == 0 {
+		return entry
+	}
+
+	entry.Log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
+		return ctx.RawJSON("request", CompactJSON(requestBody))
+	})
+
+	return entry
+}
+
+func formatHeaders(headers http.Header) map[string]interface{} {
 	lowerCaseHeaders := make(map[string]interface{})
 
-	for k, v := range r.Header {
+	for k, v := range headers {
 		lowerKey := strings.ToLower(k)
 		if len(v) == 0 {
 			lowerCaseHeaders[lowerKey] = ""
@@ -76,25 +117,5 @@ func (l ZeroLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
 		}
 	}
 
-	newLogger.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
-		return ctx.
-			Str("method", r.Method).
-			Str("remote_address", r.RemoteAddr).
-			Str("url", r.URL.String()).
-			Interface("headers", lowerCaseHeaders)
-	})
-
-	if l.Env == "dev" {
-		requestBody := ext.ReadBody(r)
-
-		if len(requestBody) == 0 {
-			return entry
-		}
-
-		entry.Log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
-			return ctx.RawJSON("request", ext.CompactJSON(requestBody))
-		})
-	}
-
-	return entry
+	return lowerCaseHeaders
 }

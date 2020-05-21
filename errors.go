@@ -1,58 +1,53 @@
 package anansi
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
+	"os"
+	"runtime/debug"
+
+	"github.com/go-chi/chi/middleware"
+)
 
 // APIError is a struct describing an error
 type APIError struct {
 	Code    int         `json:"-"`
 	Message string      `json:"message"`
 	Meta    interface{} `json:"meta"`
+	Err     error       `json:"-"`
 }
-
-type ErrorInterpreter func(err error) APIError
 
 // implements the error interface
 func (e APIError) Error() string { return e.Message }
 
-func ConstraintError(message string) APIError {
-	return APIError{
-		Code:    422,
-		Message: message,
-	}
-}
+// Recoverer creates a middleware that handles panics from chi controllers. It uses
+// the passed interpreters to try to convert errors to APIErrors where possible
+// otherwise it returns a 500 error. When the panic is an APIError or is interpreted
+// as one, it sends a response with the right error code.
+// TODO: add support for wrapped errors in APIError.
+func Recoverer(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rvr := recover(); rvr != nil && rvr != http.ErrAbortHandler {
 
-func ForbiddenError(message string) APIError {
-	return APIError{
-		Code:    403,
-		Message: message,
-	}
-}
+				logEntry := middleware.GetLogEntry(r)
+				if logEntry != nil {
+					logEntry.Panic(rvr, debug.Stack())
+				} else {
+					fmt.Fprintf(os.Stderr, "Panic: %+v\n", rvr)
+				}
+				// debug.PrintStack()
 
-func UnauthorisedError(message string) APIError {
-	return APIError{
-		Code:    401,
-		Message: message,
-	}
-}
+				if e, ok := rvr.(APIError); ok {
+					SendError(r, w, e)
+				} else {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				}
+			}
+		}()
 
-func BadRequestError(message string) APIError {
-	return APIError{
-		Code:    400,
-		Message: message,
+		next.ServeHTTP(w, r)
 	}
-}
 
-func ConflictError(entity string) APIError {
-	return APIError{
-		Code:    409,
-		Message: fmt.Sprintf("There's already an existing %s", entity),
-	}
-}
-
-func BadRequestDataError(message string, data interface{}) APIError {
-	return APIError{
-		Code:    400,
-		Message: message,
-		Meta:    data,
-	}
+	return http.HandlerFunc(fn)
 }
