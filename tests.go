@@ -86,6 +86,19 @@ func PutRequest(t *testing.T, path string, body interface{}) *http.Request {
 	return req
 }
 
+// DeleteRequest creates a mock DELETE request
+func DeleteRequest(t *testing.T, path string) *http.Request {
+	req, err := http.NewRequest("DELETE", path, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Connection", "keep-alive")
+
+	return req
+}
+
 // GetResponseBody creates a map of the JSON response body of off a mock request
 func GetResponseBody(t *testing.T, rr *httptest.ResponseRecorder) map[string]interface{} {
 	var body map[string]interface{}
