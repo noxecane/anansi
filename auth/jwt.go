@@ -10,43 +10,52 @@ import (
 
 const expiredErr = jwt.ValidationErrorExpired | jwt.ValidationErrorNotValidYet
 
-// ExpiresAt returns the time the duration ends
-func ExpiresAt(d time.Duration) time.Time {
-	return time.Now().Add(d)
+var (
+	ErrJWTExpired   = errors.New("Your JWT token has expired")
+	ErrInvalidToken = errors.New("Your token is an invalid JWT token")
+)
+
+type jwtClaims struct {
+	Data interface{} `json:"claim"`
+	jwt.Claims
 }
 
-// EncodeJWT creates a JWT token for the given struct using the HMAC algorithm.
-func EncodeJWT(secret []byte, duration time.Duration, claims jwt.Claims) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	str, err := token.SignedString(secret)
-	if err != nil {
-		return "", err
-	}
+// EncodeJWT creates a JWT token for some given struct using the HMAC algorithm.
+func EncodeJWT(secret []byte, t time.Duration, v interface{}) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtClaims{
+		Data: v,
+		Claims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(t).Unix(),
+		},
+	})
 
-	return str, nil
+	return token.SignedString(secret)
 }
 
 // DecodeJWT extracts a struct from a JWT token using the HMAC algorithm
-func DecodeJWT(secret []byte, sessionToken []byte, claims jwt.Claims) error {
-	token, err := jwt.ParseWithClaims(string(sessionToken), claims, func(token *jwt.Token) (interface{}, error) {
+func DecodeJWT(secret []byte, token []byte, v *interface{}) error {
+	claim := new(jwtClaims)
+	t, err := jwt.ParseWithClaims(string(token), claim, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return secret, nil
 	})
 
-	if !token.Valid {
+	if !t.Valid {
 		if verr, ok := err.(*jwt.ValidationError); ok {
 			switch {
 			case verr.Errors&jwt.ValidationErrorMalformed != 0:
-				return errors.New("This is not a JWT token")
+				return ErrInvalidToken
 			case verr.Errors&expiredErr != 0:
-				return errors.New("This token has expired")
+				return ErrJWTExpired
 			default:
 				return err
 			}
 		}
 	}
+
+	*v = claim.Data
 
 	return nil
 }
