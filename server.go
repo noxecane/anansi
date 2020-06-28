@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func listenForInterrupt(log zerolog.Logger, cancel context.CancelFunc) {
+func ListenForInterrupt(log zerolog.Logger, cancel context.CancelFunc) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 
@@ -46,7 +46,7 @@ func RunServer(port int, log zerolog.Logger, handler http.Handler, close func() 
 		ReadTimeout: 2 * time.Minute,
 	}
 
-	go listenForInterrupt(log, cancel)
+	go ListenForInterrupt(log, cancel)
 	done := waitForContext(ctx, log, server)
 
 	log.Info().Msgf("Serving api at http://127.0.0.1:%d", port)

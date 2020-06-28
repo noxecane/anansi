@@ -51,7 +51,7 @@ func ReadJSONBody(r *http.Request, schema ozzo.Validatable) {
 
 	content := r.Header.Get("Content-Type")
 	if content != "application/json" || len(body) == 0 {
-		// tell the use all the required attributes
+		// tell the user all the required attributes
 		err = schema.Validate()
 		if err != nil {
 			panic(APIError{
