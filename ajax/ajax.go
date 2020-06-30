@@ -1,4 +1,4 @@
-package anansi
+package ajax
 
 import (
 	"bytes"
@@ -8,16 +8,31 @@ import (
 	"testing"
 )
 
-// MockRequest records the http response to a generated request
-func MockRequest(req *http.Request, handler http.Handler) *httptest.ResponseRecorder {
+// Mock records the http response to a generated request
+func Mock(req *http.Request, handler http.Handler) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
 	return rr
 }
 
-// GetRequest creates a mock GET request
-func GetRequest(t *testing.T, path string) *http.Request {
+// Run runst the request and parses the response into v.
+func Run(r *http.Request, v interface{}, client http.Client) error {
+	var err error
+	var resp *http.Response
+
+	if resp, err = client.Do(r); err != nil {
+		return err
+	}
+
+	// make sure to clean up the response
+	defer resp.Body.Close()
+
+	return json.NewDecoder(resp.Body).Decode(v)
+}
+
+// Get creates a mock GET request
+func Get(t *testing.T, path string) *http.Request {
 	req, err := http.NewRequest("GET", path, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -29,8 +44,8 @@ func GetRequest(t *testing.T, path string) *http.Request {
 	return req
 }
 
-// SearchRequest creates a mock GET request with query parameters
-func SearchRequest(t *testing.T, path string, query map[string]string) *http.Request {
+// Search creates a mock GET request with query parameters
+func Search(t *testing.T, path string, query map[string]string) *http.Request {
 	req, err := http.NewRequest("GET", path, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -48,8 +63,8 @@ func SearchRequest(t *testing.T, path string, query map[string]string) *http.Req
 	return req
 }
 
-// PostRequest creates a mock POST request with a JSON body
-func PostRequest(t *testing.T, path string, body interface{}) *http.Request {
+// Post creates a mock POST request with a JSON body
+func Post(t *testing.T, path string, body interface{}) *http.Request {
 	raw, err := json.Marshal(body)
 	if err != nil {
 		panic(err)
@@ -67,8 +82,8 @@ func PostRequest(t *testing.T, path string, body interface{}) *http.Request {
 	return req
 }
 
-// PutRequest creates a mock PUT request with a JSON body
-func PutRequest(t *testing.T, path string, body interface{}) *http.Request {
+// Put creates a mock PUT request with a JSON body
+func Put(t *testing.T, path string, body interface{}) *http.Request {
 	raw, err := json.Marshal(body)
 	if err != nil {
 		panic(err)
@@ -86,8 +101,8 @@ func PutRequest(t *testing.T, path string, body interface{}) *http.Request {
 	return req
 }
 
-// DeleteRequest creates a mock DELETE request
-func DeleteRequest(t *testing.T, path string) *http.Request {
+// Delete creates a mock DELETE request
+func Delete(t *testing.T, path string) *http.Request {
 	req, err := http.NewRequest("DELETE", path, nil)
 	if err != nil {
 		t.Fatal(err)
