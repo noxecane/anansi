@@ -3,6 +3,7 @@ package anansi
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -42,7 +43,6 @@ func ReadJSONBody(r *http.Request, schema ozzo.Validatable) {
 	readSplit := io.TeeReader(r.Body, &buffer)
 	body, err := ioutil.ReadAll(readSplit)
 	if err != nil {
-		// never run away with your wife
 		panic(err)
 	}
 
@@ -86,7 +86,13 @@ func ReadJSONBody(r *http.Request, schema ozzo.Validatable) {
 
 // IDParam extracts a uint URL parameter from the given request
 func IDParam(r *http.Request, name string) uint {
-	raw, err := strconv.ParseUint(chi.URLParam(r, name), 10, 32)
+	param := chi.URLParam(r, name)
+	if param == "" {
+		err := fmt.Sprintf("requested param %s is not part of route", name)
+		panic(errors.New(err))
+	}
+
+	raw, err := strconv.ParseUint(param, 10, 32)
 	if err != nil {
 		panic(APIError{
 			Code:    http.StatusBadRequest,
@@ -94,4 +100,16 @@ func IDParam(r *http.Request, name string) uint {
 		})
 	}
 	return uint(raw)
+}
+
+// StringParam basically just ensures the param name is correct. You might not
+// need this method unless you're too lazy to do real tests.
+func StringParam(r *http.Request, name string) string {
+	param := chi.URLParam(r, name)
+	if param == "" {
+		err := fmt.Sprintf("requested param %s is not part of route", name)
+		panic(errors.New(err))
+	}
+
+	return param
 }
