@@ -20,6 +20,8 @@ type APIError struct {
 // implements the error interface
 func (e APIError) Error() string { return e.Message }
 
+func (e APIError) Unwrap() error { return e.Err }
+
 // Recoverer creates a middleware that handles panics from chi controllers. It uses
 // the passed interpreters to try to convert errors to APIErrors where possible
 // otherwise it returns a 500 error. When the panic is an APIError or is interpreted

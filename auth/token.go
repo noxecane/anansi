@@ -27,38 +27,8 @@ func NewTokenStore(r *redis.Client, secret []byte) *TokenStore {
 	return &TokenStore{redis: r, secret: secret}
 }
 
-// Commission creates a single use token that expires after the given timeout. The token is a hash of a
-// random 32 character key that can be used to revoke the token later on.
-func (ts *TokenStore) Commission(t time.Duration, data interface{}) (token string, key string, err error) {
-	var encoded []byte
-
-	if key, err = RandomString(32); err != nil {
-		return
-	}
-
-	// create a hash for the key
-	if token, err = ts.getHash(key); err != nil {
-		return
-	}
-
-	// TODO: replace this something lighter and faster
-	if encoded, err = json.Marshal(data); err != nil {
-		return
-	}
-
-	// One would naturally prefer hash maps but they don't support individual subkey expiry.
-	tokenKey := fmt.Sprintf("%s::%s", tokenMapKey, token)
-
-	if _, err = ts.redis.Set(tokenKey, encoded, t).Result(); err != nil {
-		return
-	}
-
-	return
-}
-
-// CommissionWithKey creates a single use token that expires after the given timeout. Unlike New, it accepts a
-// key rather can creating one
-func (ts *TokenStore) CommissionWithKey(t time.Duration, key string, data interface{}) (string, error) {
+// Commission creates a single use token that expires after the given timeout.
+func (ts *TokenStore) Commission(t time.Duration, key string, data interface{}) (string, error) {
 	var encoded []byte
 	var err error
 	var token string
@@ -105,8 +75,8 @@ func (ts *TokenStore) Refresh(token string, timeout time.Duration, data interfac
 	return nil
 }
 
-// Decommission loads the value referenced by the token and dispenses of the token,
-// making it unvailable for any further use.
+// Decommission loads the value referenced by the token and dispenses of the token, making it
+// unvailable for any further use.
 func (ts *TokenStore) Decommission(token string, data interface{}) error {
 	var err error
 
