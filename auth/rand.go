@@ -63,11 +63,12 @@ func RandomDigits(len int) string {
 // RandomFormat generates a string based on format(fmt.Sprintf) and
 // the choices given. It's up to the user to make sure the number of
 // choices match the number of format operators.
-func RandomFormat(format string, choices ...[]string) string {
+func RandomFormat(format string, possibleChoices ...[]string) string {
 	var choiceVals []interface{}
 
-	for _, choice := range choices {
-		choiceVals = append(choiceVals, RandomStringChoice(choice))
+	for _, choices := range possibleChoices {
+		choice := choices[mrand.Intn(len(choices))]
+		choiceVals = append(choiceVals, choice)
 	}
 
 	return fmt.Sprintf(format, choiceVals...)

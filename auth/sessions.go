@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -47,7 +46,7 @@ func NewSessionStore(store *TokenStore, sCycle, hCycle string, devMode bool) *Se
 
 // Load retrieves a user's session object based on the session key from the Authorization
 // header or the session cookie and fails with an error if it faces any issue parsing any of them.
-func (s *SessionStore) Load(r *http.Request, w http.ResponseWriter, session *interface{}) error {
+func (s *SessionStore) load(r *http.Request, w http.ResponseWriter, session *interface{}) error {
 	var token string
 	var err error
 	var cookie *http.Cookie
@@ -102,14 +101,14 @@ func (s *SessionStore) Load(r *http.Request, w http.ResponseWriter, session *int
 	return nil
 }
 
-// IsSecure loads a user session into the request context
-func (s *SessionStore) IsSecure() func(http.Handler) http.Handler {
+// Secure loads a user session into the request context
+func (s *SessionStore) Secure() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var session interface{}
 			var ctx context.Context
 
-			if err := s.Load(r, w, &session); err != nil {
+			if err := s.load(r, w, &session); err != nil {
 				ctx = context.WithValue(r.Context(), errorKey{}, err)
 			} else {
 				ctx = context.WithValue(r.Context(), sessionKey{}, session)
@@ -121,64 +120,10 @@ func (s *SessionStore) IsSecure() func(http.Handler) http.Handler {
 	}
 }
 
-// Headless creates a non-extensible, irrevocable token and attaches it to an HTTP
-// request through the "Authorization" header
-func (s *SessionStore) Headless(r *http.Request, session interface{}) (string, error) {
-	if token, err := EncodeJWT(s.store.secret, s.headlessTimeout, session); err != nil {
-		return "", err
-	} else {
-		r.Header.Set("Authorization", fmt.Sprintf("Headless %s", token))
-		return token, nil
-	}
-}
-
-// Bearer creates an extensible, revocable session token and attaches it to an HTTP
-// request through the "Authorization" header.
-func (s *SessionStore) Bearer(r *http.Request, key string, session interface{}) (string, error) {
-	if token, err := s.store.Commission(s.timeout, key, session); err != nil {
-		return "", err
-	} else {
-		r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-		return token, nil
-	}
-}
-
-// Cookie is like Bearer, but rather attaches it as a cookie to a response
-func (s *SessionStore) Cookie(w http.ResponseWriter, key string, session interface{}) (string, error) {
-	expires := time.Now().Add(s.timeout)
-	if token, err := s.store.Commission(s.timeout, key, session); err != nil {
-		return "", err
-	} else {
-		cookie := http.Cookie{Name: cookieKey, Value: token, Expires: expires, HttpOnly: true, Secure: !s.devMode}
-		http.SetCookie(w, &cookie)
-		return token, nil
-	}
-}
-
-// Revoke marks a token linked to the key as invalid from now.
-func (s *SessionStore) Revoke(key string) error {
-	return s.store.Revoke(key)
-}
-
-// Destroy marks a token as invalid.
-func (s *SessionStore) Destroy(token string) error {
-	var data interface{}
-	return s.store.Decommission(token, data)
-}
-
-// DestroyCookie marks the token in the cookie as invalid and then removes the token from the cookie
-func (s *SessionStore) DestroyCookie(token string, w http.ResponseWriter) error {
-	if err := s.Destroy(token); err != nil {
-		return err
-	}
-
-	cookie := http.Cookie{Name: cookieKey, Value: token, Expires: time.Now(), HttpOnly: true, Secure: s.devMode}
-	http.SetCookie(w, &cookie)
-	return nil
-}
-
-// GetSession retrieves a user session stored in the context, panics with a 401 error if it's not there.
-func GetSession(r *http.Request) interface{} {
+// Get retrieves a user session stored in the context, panics with an appropriate error if the
+// error value has been set on the request context(for failed session loads). Make sure to use this
+// for handlers protected by the Secure method.
+func Get(r *http.Request) interface{} {
 	ctx := r.Context()
 	err := ctx.Value(errorKey{}).(error)
 	session := ctx.Value(sessionKey{})
@@ -202,7 +147,7 @@ func GetSession(r *http.Request) interface{} {
 	if session == nil {
 		panic(anansi.APIError{
 			Code:    http.StatusUnauthorized,
-			Message: "You need to be signed in",
+			Message: "We could not find a session for your request",
 		})
 	}
 

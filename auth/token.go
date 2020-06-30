@@ -34,9 +34,12 @@ func (ts *TokenStore) Commission(t time.Duration, key string, data interface{}) 
 	var token string
 
 	// create a hash for the key
-	if token, err = ts.getHash(key); err != nil {
+	sig := hmac.New(sha256.New, ts.secret)
+	if _, err := sig.Write([]byte(key)); err != nil {
 		return "", err
 	}
+
+	token = hex.EncodeToString(sig.Sum(nil))
 
 	// TODO: replace this something lighter and faster
 	if encoded, err = json.Marshal(data); err != nil {
@@ -59,7 +62,9 @@ func (ts *TokenStore) Peek(token string, data interface{}) error {
 	return ts.peekToken(tokenKey, data)
 }
 
-// Refresh loads the data the token references and refreshes it's lifetime to timeout.
+// Refresh loads the data the token references and refreshes it's lifetime so it can last
+// for as long as the given timeout. Note that it doesn't add timeout to the existing
+// lifetime but rather gives it a new one afresh.
 func (ts *TokenStore) Refresh(token string, timeout time.Duration, data interface{}) error {
 	var err error
 
@@ -75,8 +80,8 @@ func (ts *TokenStore) Refresh(token string, timeout time.Duration, data interfac
 	return nil
 }
 
-// Decommission loads the value referenced by the token and dispenses of the token, making it
-// unvailable for any further use.
+// Decommission loads the value referenced by the token and dispenses of the token,
+// making it unvailable for further use.
 func (ts *TokenStore) Decommission(token string, data interface{}) error {
 	var err error
 
@@ -97,9 +102,12 @@ func (ts *TokenStore) Revoke(key string) error {
 	var err error
 	var token string
 
-	if token, err = ts.getHash(key); err != nil {
+	sig := hmac.New(sha256.New, ts.secret)
+	if _, err := sig.Write([]byte(key)); err != nil {
 		return err
 	}
+
+	token = hex.EncodeToString(sig.Sum(nil))
 
 	var del int64
 	tokenKey := fmt.Sprintf("%s::%s", tokenMapKey, token)
@@ -113,15 +121,6 @@ func (ts *TokenStore) Revoke(key string) error {
 	}
 
 	return nil
-}
-
-func (ts *TokenStore) getHash(key string) (string, error) {
-	sig := hmac.New(sha256.New, ts.secret)
-	if _, err := sig.Write([]byte(key)); err != nil {
-		return "", err
-	}
-
-	return hex.EncodeToString(sig.Sum(nil)), nil
 }
 
 func (ts *TokenStore) peekToken(tokenKey string, data interface{}) error {
