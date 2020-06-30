@@ -23,12 +23,13 @@ type SessionStore struct {
 	store           *TokenStore
 	timeout         time.Duration
 	headlessTimeout time.Duration
+	devMode         bool
 }
 
 type sessionKey struct{}
 type errorKey struct{}
 
-func NewSessionStore(store *TokenStore, sCycle, hCycle string) *SessionStore {
+func NewSessionStore(store *TokenStore, sCycle, hCycle string, devMode bool) *SessionStore {
 	var timeout time.Duration
 	var headlessTimeout time.Duration
 	var err error
@@ -41,7 +42,7 @@ func NewSessionStore(store *TokenStore, sCycle, hCycle string) *SessionStore {
 		panic(err)
 	}
 
-	return &SessionStore{store, timeout, headlessTimeout}
+	return &SessionStore{store, timeout, headlessTimeout, devMode}
 }
 
 // Load retrieves a user's session object based on the session key from the Authorization
@@ -172,7 +173,7 @@ func (s *SessionStore) CookieSessionFromKey(w http.ResponseWriter, key string, s
 	if token, err := s.store.CommissionWithKey(s.timeout, key, session); err != nil {
 		return "", err
 	} else {
-		cookie := http.Cookie{Name: cookieKey, Value: token, Expires: expires}
+		cookie := http.Cookie{Name: cookieKey, Value: token, Expires: expires, HttpOnly: true, Secure: !s.devMode}
 		http.SetCookie(w, &cookie)
 		return token, nil
 	}
