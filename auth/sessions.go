@@ -52,7 +52,7 @@ func (s *SessionStore) Load(r *http.Request, w http.ResponseWriter, session *int
 	var err error
 	var cookie *http.Cookie
 
-	if cookie, err = r.Cookie(cookieKey); err != nil && errors.Is(err, http.ErrNoCookie) {
+	if cookie, err = r.Cookie(cookieKey); err != nil {
 		authHeader := r.Header.Get("Authorization")
 		// if there's no authorisation header, then there's no use going further
 		if len(authHeader) == 0 {
