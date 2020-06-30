@@ -121,9 +121,9 @@ func (s *SessionStore) IsSecure() func(http.Handler) http.Handler {
 	}
 }
 
-// HeadlessSession creates a session that uses the headless scheme and attaches it to the request
-// This would be mainly useful for tests and inter-service requests.
-func (s *SessionStore) HeadlessSession(r *http.Request, session interface{}) (string, error) {
+// Headless creates a non-extensible, irrevocable token and attaches it to an HTTP
+// request through the "Authorization" header
+func (s *SessionStore) Headless(r *http.Request, session interface{}) (string, error) {
 	if token, err := EncodeJWT(s.store.secret, s.headlessTimeout, session); err != nil {
 		return "", err
 	} else {
@@ -132,21 +132,10 @@ func (s *SessionStore) HeadlessSession(r *http.Request, session interface{}) (st
 	}
 }
 
-// BearerSession creates a session that uses the "BearerSession" scheme and attaches it to the request
-// This would be mainly useful for tests.
-func (s *SessionStore) BearerSession(r *http.Request, session interface{}) (token, key string, err error) {
-	if token, key, err = s.store.Commission(s.timeout, session); err != nil {
-		return
-	} else {
-		r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-		return
-	}
-}
-
-// BearerSessionFromKey is like `Bearer` but with support for using used defined keys to define session keys.
-// This would be mainly useful for tests.
-func (s *SessionStore) BearerSessionFromKey(r *http.Request, key string, session interface{}) (string, error) {
-	if token, err := s.store.CommissionWithKey(s.timeout, key, session); err != nil {
+// Bearer creates an extensible, revocable session token and attaches it to an HTTP
+// request through the "Authorization" header.
+func (s *SessionStore) Bearer(r *http.Request, key string, session interface{}) (string, error) {
+	if token, err := s.store.Commission(s.timeout, key, session); err != nil {
 		return "", err
 	} else {
 		r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
@@ -154,23 +143,10 @@ func (s *SessionStore) BearerSessionFromKey(r *http.Request, key string, session
 	}
 }
 
-// CookieSession creates a new cookie session and attaches it a response. Use this to create new user sessions.
-func (s *SessionStore) CookieSession(w http.ResponseWriter, session interface{}) (token, key string, err error) {
+// Cookie is like Bearer, but rather attaches it as a cookie to a response
+func (s *SessionStore) Cookie(w http.ResponseWriter, key string, session interface{}) (string, error) {
 	expires := time.Now().Add(s.timeout)
-	if token, key, err = s.store.Commission(s.timeout, session); err != nil {
-		return
-	} else {
-		cookie := http.Cookie{Name: cookieKey, Value: token, Expires: expires}
-		http.SetCookie(w, &cookie)
-		return
-	}
-}
-
-// CookieSessionFromKey creates a new cookie session and attaches it a response. Use this to create new
-// user sessions where you already have a key for revocation.
-func (s *SessionStore) CookieSessionFromKey(w http.ResponseWriter, key string, session interface{}) (string, error) {
-	expires := time.Now().Add(s.timeout)
-	if token, err := s.store.CommissionWithKey(s.timeout, key, session); err != nil {
+	if token, err := s.store.Commission(s.timeout, key, session); err != nil {
 		return "", err
 	} else {
 		cookie := http.Cookie{Name: cookieKey, Value: token, Expires: expires, HttpOnly: true, Secure: !s.devMode}

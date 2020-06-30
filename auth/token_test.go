@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bxcodec/faker/v3"
 	"github.com/go-redis/redis/v7"
 )
 
@@ -13,6 +14,7 @@ var client *redis.Client
 
 type SampleStruct struct {
 	Message string `json:"message"`
+	User    string `json:"user_id"`
 }
 
 func newRedisClient() (*redis.Client, error) {
@@ -48,7 +50,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCommissionDecomission(t *testing.T) {
-	sample := SampleStruct{Message: "A sample message"}
+	sample := SampleStruct{Message: faker.Sentence(), User: faker.Word()}
 
 	defer flushRedis(t)
 
@@ -56,7 +58,7 @@ func TestCommissionDecomission(t *testing.T) {
 	var err error
 
 	t.Run("the token is associated with the data", func(t *testing.T) {
-		if token, _, err = sharedTestStore.Commission(time.Millisecond*300, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Millisecond*300, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
 
@@ -75,7 +77,7 @@ func TestCommissionDecomission(t *testing.T) {
 	})
 
 	t.Run("the token expires after timeout", func(t *testing.T) {
-		if token, _, err = sharedTestStore.Commission(time.Millisecond*100, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Millisecond*100, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(time.Millisecond * 100)
@@ -101,7 +103,7 @@ func TestCommissionRefresh(t *testing.T) {
 	var err error
 
 	t.Run("the token gets refreshed for an extra 300ms", func(t *testing.T) {
-		if token, _, err = sharedTestStore.Commission(time.Millisecond*300, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Millisecond*300, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(time.Millisecond * 100)
@@ -126,7 +128,7 @@ func TestCommissionRefresh(t *testing.T) {
 	})
 
 	t.Run("the token expires after original time plus refresh timeout", func(t *testing.T) {
-		if token, _, err = sharedTestStore.Commission(time.Millisecond*300, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Millisecond*300, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(time.Millisecond * 100)
@@ -143,7 +145,7 @@ func TestCommissionRefresh(t *testing.T) {
 	})
 
 	t.Run("it's impossible to refresh an expired token", func(t *testing.T) {
-		if token, _, err = sharedTestStore.Commission(time.Millisecond*100, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Millisecond*100, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(time.Millisecond * 100)
@@ -163,7 +165,7 @@ func TestCommissionPeek(t *testing.T) {
 	var err error
 
 	t.Run("the token doesn't expire till decommission is called", func(t *testing.T) {
-		if token, _, err = sharedTestStore.Commission(time.Millisecond*300, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Millisecond*300, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(time.Millisecond * 100)
@@ -190,16 +192,15 @@ func TestCommissionRevoke(t *testing.T) {
 
 	defer flushRedis(t)
 
-	var key string
 	var token string
 	var err error
 
 	t.Run("the token is rendered useless immediately", func(t *testing.T) {
-		if token, key, err = sharedTestStore.Commission(time.Millisecond*300, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Millisecond*300, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
 
-		if err = sharedTestStore.Revoke(key); err != nil {
+		if err = sharedTestStore.Revoke(sample.User); err != nil {
 			t.Fatal(err)
 		}
 
