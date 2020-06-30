@@ -155,8 +155,26 @@ func (s *SessionStore) Cookie(w http.ResponseWriter, key string, session interfa
 	}
 }
 
-func Revoke() {
+// Revoke marks a token linked to the key as invalid from now.
+func (s *SessionStore) Revoke(key string) error {
+	return s.store.Revoke(key)
+}
 
+// Destroy marks a token as invalid.
+func (s *SessionStore) Destroy(token string) error {
+	var data interface{}
+	return s.store.Decommission(token, data)
+}
+
+// DestroyCookie marks the token in the cookie as invalid and then removes the token from the cookie
+func (s *SessionStore) DestroyCookie(token string, w http.ResponseWriter) error {
+	if err := s.Destroy(token); err != nil {
+		return err
+	}
+
+	cookie := http.Cookie{Name: cookieKey, Value: token, Expires: time.Now(), HttpOnly: true, Secure: s.devMode}
+	http.SetCookie(w, &cookie)
+	return nil
 }
 
 // GetSession retrieves a user session stored in the context, panics with a 401 error if it's not there.
