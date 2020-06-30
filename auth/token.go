@@ -12,15 +12,14 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
-const tokenMapKey = "general_token_map"
-
 var (
 	ErrTokenNotFound = errors.New("The passed token has either expired or never existed")
 )
 
 type TokenStore struct {
-	redis  *redis.Client
-	secret []byte
+	redis     *redis.Client
+	namespace string
+	secret    []byte
 }
 
 func NewTokenStore(r *redis.Client, secret []byte) *TokenStore {
@@ -47,7 +46,7 @@ func (ts *TokenStore) Commission(t time.Duration, key string, data interface{}) 
 	}
 
 	// One would naturally prefer hash maps but they don't support individual subkey expiry.
-	tokenKey := fmt.Sprintf("%s::%s", tokenMapKey, token)
+	tokenKey := fmt.Sprintf("%s::%s", ts.namespace, token)
 
 	if _, err = ts.redis.Set(tokenKey, encoded, t).Result(); err != nil {
 		return "", err
@@ -58,7 +57,7 @@ func (ts *TokenStore) Commission(t time.Duration, key string, data interface{}) 
 
 // Peek gets the data the token references without changing its lifetime.
 func (ts *TokenStore) Peek(token string, data interface{}) error {
-	tokenKey := fmt.Sprintf("%s::%s", tokenMapKey, token)
+	tokenKey := fmt.Sprintf("%s::%s", ts.namespace, token)
 	return ts.peekToken(tokenKey, data)
 }
 
@@ -68,7 +67,7 @@ func (ts *TokenStore) Peek(token string, data interface{}) error {
 func (ts *TokenStore) Refresh(token string, timeout time.Duration, data interface{}) error {
 	var err error
 
-	tokenKey := fmt.Sprintf("%s::%s", tokenMapKey, token)
+	tokenKey := fmt.Sprintf("%s::%s", ts.namespace, token)
 	if err = ts.peekToken(tokenKey, data); err != nil {
 		return err
 	}
@@ -85,7 +84,7 @@ func (ts *TokenStore) Refresh(token string, timeout time.Duration, data interfac
 func (ts *TokenStore) Decommission(token string, data interface{}) error {
 	var err error
 
-	tokenKey := fmt.Sprintf("%s::%s", tokenMapKey, token)
+	tokenKey := fmt.Sprintf("%s::%s", ts.namespace, token)
 	if err = ts.peekToken(tokenKey, data); err != nil {
 		return err
 	}
@@ -110,7 +109,7 @@ func (ts *TokenStore) Revoke(key string) error {
 	token = hex.EncodeToString(sig.Sum(nil))
 
 	var del int64
-	tokenKey := fmt.Sprintf("%s::%s", tokenMapKey, token)
+	tokenKey := fmt.Sprintf("%s::%s", ts.namespace, token)
 	if del, err = ts.redis.Del(tokenKey).Result(); err != nil {
 		return err
 	}
