@@ -10,8 +10,6 @@ import (
 	"github.com/tsaron/anansi"
 )
 
-const cookieKey = "web_session"
-
 var (
 	ErrAuthorisationFormat = errors.New("Your authorization header format is invalid")
 	ErrUnsupportedScheme   = errors.New("Your scheme is not supported")
@@ -19,29 +17,23 @@ var (
 )
 
 type SessionStore struct {
-	store           *TokenStore
-	timeout         time.Duration
-	headlessTimeout time.Duration
-	devMode         bool
+	store     *TokenStore
+	timeout   time.Duration
+	cookieKey string
 }
 
 type sessionKey struct{}
 type errorKey struct{}
 
-func NewSessionStore(store *TokenStore, sCycle, hCycle string, devMode bool) *SessionStore {
+func NewSessionStore(store *TokenStore, sCycle, cookieKey string) *SessionStore {
 	var timeout time.Duration
-	var headlessTimeout time.Duration
 	var err error
 
 	if timeout, err = time.ParseDuration(sCycle); err != nil {
 		panic(err)
 	}
 
-	if headlessTimeout, err = time.ParseDuration(hCycle); err != nil {
-		panic(err)
-	}
-
-	return &SessionStore{store, timeout, headlessTimeout, devMode}
+	return &SessionStore{store, timeout, cookieKey}
 }
 
 // Load retrieves a user's session object based on the session key from the Authorization
@@ -51,7 +43,7 @@ func (s *SessionStore) load(r *http.Request, w http.ResponseWriter, session *int
 	var err error
 	var cookie *http.Cookie
 
-	if cookie, err = r.Cookie(cookieKey); err != nil {
+	if cookie, err = r.Cookie(s.cookieKey); err != nil {
 		authHeader := r.Header.Get("Authorization")
 		// if there's no authorisation header, then there's no use going further
 		if len(authHeader) == 0 {
