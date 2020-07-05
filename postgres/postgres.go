@@ -51,7 +51,7 @@ func NewDB(env PostgresEnv) (*pg.DB, error) {
 	}
 
 	db := pg.Connect(opts)
-	_, err := db.Exec("select 1")
+	_, err := db.Exec("select version()")
 
 	return db, err
 }
