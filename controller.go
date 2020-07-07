@@ -48,9 +48,9 @@ func DefaultRoutes(router *chi.Mux) {
 // is not "dev".
 func CORS(router *chi.Mux, appEnv string, origins ...string) {
 	if appEnv == "dev" {
-		router.Use(DevCORS().Handler)
+		router.Use(devCORS().Handler)
 	} else {
 		origins = append(origins, "http://localhost")
-		router.Use(SecureCORS(origins...).Handler)
+		router.Use(secureCORS(origins...).Handler)
 	}
 }

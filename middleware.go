@@ -6,8 +6,8 @@ import (
 	"github.com/rs/cors"
 )
 
-// DevCORS creates a very permissive CORS instance
-func DevCORS() *cors.Cors {
+// devCORS creates a very permissive CORS instance
+func devCORS() *cors.Cors {
 	return cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{
@@ -23,8 +23,8 @@ func DevCORS() *cors.Cors {
 	})
 }
 
-// SecureCORS is a lot like DevCORS except with a limited set of origins
-func SecureCORS(origins ...string) *cors.Cors {
+// secureCORS is a lot like DevCORS except with a limited set of origins
+func secureCORS(origins ...string) *cors.Cors {
 	return cors.New(cors.Options{
 		AllowedOrigins: origins,
 		AllowedMethods: []string{
