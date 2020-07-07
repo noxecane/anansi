@@ -6,19 +6,22 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/rs/zerolog"
 )
 
 // DefaultMiddleware sets up some middlware for a router as well as
 // liveliness(/) and not found handlers:
 // - RequestID
 // - RealIP
+// - Logger(using zerolog)
 // - Recoverer
 // - RedirectSlashes
 // - Compress(with compression level of 5)
 // - Timeout(with 1 minute)
-func DefaultMiddleware(router *chi.Mux) {
+func DefaultMiddleware(router *chi.Mux, appEnv string, log zerolog.Logger) {
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
+	router.Use(ZeroMiddleware(log, appEnv))
 	router.Use(Recoverer)
 	router.Use(middleware.RedirectSlashes)
 	router.Use(middleware.Compress(5))
