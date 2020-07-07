@@ -23,7 +23,10 @@ func DefaultMiddleware(router *chi.Mux) {
 	router.Use(middleware.RedirectSlashes)
 	router.Use(middleware.Compress(5))
 	router.Use(middleware.Timeout(time.Minute))
+}
 
+// DefaultRoutes adds liveness(/) and Not found handlers for the passed router.
+func DefaultRoutes(router *chi.Mux) {
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
