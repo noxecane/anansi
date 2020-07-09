@@ -21,13 +21,13 @@ func ReadBody(r *http.Request) []byte {
 
 	// copy request body to in memory buffer while being read
 	readSplit := io.TeeReader(r.Body, &buffer)
-	if buffer.Len() == 0 {
-		return make([]byte, 0)
-	}
-
 	body, err := ioutil.ReadAll(readSplit)
 	if err != nil {
 		panic(err)
+	}
+
+	if buffer.Len() == 0 {
+		return make([]byte, 0)
 	}
 
 	// return what you collected
