@@ -31,7 +31,7 @@ func DefaultMiddleware(router *chi.Mux, appEnv string, log zerolog.Logger) {
 
 // DefaultRoutes adds liveness(/) and Not found handlers for the passed router.
 func DefaultRoutes(router *chi.Mux) {
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	router.Get("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("Up and Running!"))
@@ -40,7 +40,7 @@ func DefaultRoutes(router *chi.Mux) {
 		}
 	})
 
-	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+	router.NotFound(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "Whoops!! This route doesn't exist", 404)
 	})
 }

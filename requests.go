@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi"
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
@@ -50,7 +51,7 @@ func ReadJSONBody(r *http.Request, schema ozzo.Validatable) {
 	r.Body = ioutil.NopCloser(&buffer)
 
 	content := r.Header.Get("Content-Type")
-	if content != "application/json" || len(body) == 0 {
+	if !strings.Contains(content, "application/json") || len(body) == 0 {
 		// tell the user all the required attributes
 		err = schema.Validate()
 		if err != nil {
