@@ -12,7 +12,7 @@ import (
 // This means you have to ensure the SQL files follow the go-migrate format
 // Also note that the directory must be relative to final executable without
 // the preceding "/" or "./".
-func Migrate(dir string, env PostgresEnv) error {
+func Migrate(dir, schema string, env PostgresEnv) error {
 	// interprete the secure mode flag
 	var sslMode string
 	if env.PostgresSecureMode {
@@ -30,6 +30,10 @@ func Migrate(dir string, env PostgresEnv) error {
 		env.PostgresDatabase,
 		sslMode,
 	)
+
+	if schema != "" {
+		postgresURL = fmt.Sprintf("%s&search_path=%s", postgresURL, schema)
+	}
 
 	var mig *migrate.Migrate
 	var err error
