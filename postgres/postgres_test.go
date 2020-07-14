@@ -3,7 +3,7 @@ package postgres
 import "testing"
 
 func TestConnectToPostgres(t *testing.T) {
-	_, err := NewDB(PostgresEnv{
+	_, err := NewDB("", PostgresEnv{
 		PostgresDatabase:   "fakedb",
 		PostgresHost:       "fakehost",
 		PostgresPassword:   "fakepassword",
