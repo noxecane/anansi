@@ -26,10 +26,10 @@ type PostgresEnv struct {
 }
 
 // ConnectDB initialises a global connection for `DB`
-func ConnectDB(env PostgresEnv) {
+func ConnectDB(schema string, env PostgresEnv) {
 	pgOnce.Do(func() {
 		var err error
-		DB, err = NewDB(env)
+		DB, err = NewDB(schema, env)
 
 		if err != nil {
 			panic(err)
@@ -38,7 +38,7 @@ func ConnectDB(env PostgresEnv) {
 }
 
 // NewDB creates a connection to a postgres DB and ensures the connection is live.
-func NewDB(env PostgresEnv) (*pg.DB, error) {
+func NewDB(schema string, env PostgresEnv) (*pg.DB, error) {
 	opts := &pg.Options{
 		Addr:     fmt.Sprintf("%s:%d", env.PostgresHost, env.PostgresPort),
 		User:     env.PostgresUser,
@@ -46,12 +46,24 @@ func NewDB(env PostgresEnv) (*pg.DB, error) {
 		Database: env.PostgresDatabase,
 	}
 
+	var err error
+
+	if schema != "" {
+		opts.ApplicationName = schema
+		opts.OnConnect = func(c *pg.Conn) error {
+			if _, err2 := c.Exec("set search_path=?", schema); err2 != nil {
+				err = err2
+			}
+			return nil
+		}
+	}
+
 	if env.PostgresSecureMode {
 		opts.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
 	db := pg.Connect(opts)
-	_, err := db.Exec("select version()")
+	_, err = db.Exec("select version()")
 
 	return db, err
 }
