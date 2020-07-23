@@ -37,7 +37,7 @@ func waitForContext(ctx context.Context, log zerolog.Logger, server *http.Server
 	return done
 }
 
-func RunServer(port int, log zerolog.Logger, handler http.Handler, close func() error) {
+func RunServer(port int, log zerolog.Logger, handler http.Handler) {
 	// request context
 	ctx, cancel := context.WithCancel(context.Background())
 	server := &http.Server{
@@ -56,9 +56,4 @@ func RunServer(port int, log zerolog.Logger, handler http.Handler, close func() 
 
 	// return only when done is closed
 	<-done
-
-	// close application resource, only logging errors
-	if err := close(); err != nil {
-		log.Warn().Err(err).Msg("Could not close app resources")
-	}
 }
