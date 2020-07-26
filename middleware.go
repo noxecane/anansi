@@ -23,7 +23,7 @@ func DefaultMiddleware(router *chi.Mux, appEnv string, log zerolog.Logger) {
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
 	router.Use(ZeroMiddleware(log, appEnv))
-	router.Use(Recoverer)
+	router.Use(Recoverer(appEnv))
 	router.Use(middleware.RedirectSlashes)
 	router.Use(middleware.Compress(5))
 	router.Use(middleware.Timeout(time.Minute))

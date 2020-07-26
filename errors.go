@@ -27,29 +27,33 @@ func (e APIError) Unwrap() error { return e.Err }
 // otherwise it returns a 500 error. When the panic is an APIError or is interpreted
 // as one, it sends a response with the right error code.
 // TODO: add support for wrapped errors in APIError.
-func Recoverer(next http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if rvr := recover(); rvr != nil && rvr != http.ErrAbortHandler {
+func Recoverer(env string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if rvr := recover(); rvr != nil && rvr != http.ErrAbortHandler {
 
-				logEntry := middleware.GetLogEntry(r)
-				if logEntry != nil {
-					logEntry.Panic(rvr, debug.Stack())
-				} else {
-					fmt.Fprintf(os.Stderr, "Panic: %+v\n", rvr)
+					logEntry := middleware.GetLogEntry(r)
+					if logEntry != nil {
+						logEntry.Panic(rvr, debug.Stack())
+					} else {
+						fmt.Fprintf(os.Stderr, "Panic: %+v\n", rvr)
+					}
+
+					if e, ok := rvr.(APIError); ok {
+						SendError(r, w, e)
+					} else {
+						if env == "dev" || env == "test" {
+							debug.PrintStack()
+						}
+						http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					}
 				}
+			}()
 
-				if e, ok := rvr.(APIError); ok {
-					SendError(r, w, e)
-				} else {
-					debug.PrintStack()
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				}
-			}
-		}()
+			next.ServeHTTP(w, r)
+		}
 
-		next.ServeHTTP(w, r)
+		return http.HandlerFunc(fn)
 	}
-
-	return http.HandlerFunc(fn)
 }
