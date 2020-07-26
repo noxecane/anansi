@@ -17,12 +17,13 @@ var pgOnce sync.Once
 // PostgresEnv is the definition of environment variables needed
 // to setup a postgres connection
 type PostgresEnv struct {
-	PostgresHost       string `required:"true" split_words:"true"`
-	PostgresPort       int    `required:"true" split_words:"true"`
-	PostgresSecureMode bool   `required:"true" split_words:"true"`
-	PostgresUser       string `required:"true" split_words:"true"`
-	PostgresPassword   string `required:"true" split_words:"true"`
-	PostgresDatabase   string `required:"true" split_words:"true"`
+	PostgresHost         string `required:"true" split_words:"true"`
+	PostgresPort         int    `required:"true" split_words:"true"`
+	PostgresSecureMode   bool   `required:"true" split_words:"true"`
+	PostgresUser         string `required:"true" split_words:"true"`
+	PostgresPassword     string `required:"true" split_words:"true"`
+	PostgresDatabase     string `required:"true" split_words:"true"`
+	PostgresMigrationDir string `split_words:"true"`
 }
 
 // ConnectDB initialises a global connection for `DB`
