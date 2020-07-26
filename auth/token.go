@@ -74,6 +74,37 @@ func (ts *TokenStore) Refresh(token string, timeout time.Duration, data interfac
 	return nil
 }
 
+// Reset changes the contents of the token without changing it's TTL
+func (ts *TokenStore) Reset(key string, timeout time.Duration, data interface{}) error {
+	var err error
+	var encoded []byte
+	var token string
+
+	sig := hmac.New(sha256.New, ts.secret)
+	if _, err := sig.Write([]byte(key)); err != nil {
+		return err
+	}
+
+	token = hex.EncodeToString(sig.Sum(nil))
+
+	if _, err = ts.redis.Get(token).Result(); err != nil {
+		return ErrTokenNotFound
+	}
+
+	//	we already know the key exists
+	ttl, _ := ts.redis.TTL(token).Result()
+
+	// TODO: replace this something lighter and faster
+	if encoded, err = json.Marshal(data); err != nil {
+		return err
+	}
+
+	if _, err = ts.redis.Set(token, encoded, ttl).Result(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Decommission loads the value referenced by the token and dispenses of the token,
 // making it unvailable for further use.
 func (ts *TokenStore) Decommission(token string, data interface{}) error {

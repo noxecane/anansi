@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -15,27 +16,22 @@ var (
 	ErrInvalidToken = errors.New("Your token is an invalid JWT token")
 )
 
-type jwtClaims struct {
-	Data interface{} `json:"claim"`
-	jwt.Claims
-}
-
 // EncodeJWT creates a JWT token for some given struct using the HMAC algorithm.
 func EncodeJWT(secret []byte, t time.Duration, v interface{}) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtClaims{
-		Data: v,
-		Claims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(t).Unix(),
-		},
+	str, _ := json.Marshal(v)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"claims": string(str),
+		"iat":    time.Now().Unix(),
+		"exp":    time.Now().Add(t).Unix(),
 	})
 
 	return token.SignedString(secret)
 }
 
 // DecodeJWT extracts a struct from a JWT token using the HMAC algorithm
-func DecodeJWT(secret []byte, token []byte, v *interface{}) error {
-	claim := new(jwtClaims)
-	t, err := jwt.ParseWithClaims(string(token), claim, func(token *jwt.Token) (interface{}, error) {
+func DecodeJWT(secret []byte, token []byte, v interface{}) error {
+	t, err := jwt.Parse(string(token), func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -55,7 +51,10 @@ func DecodeJWT(secret []byte, token []byte, v *interface{}) error {
 		}
 	}
 
-	*v = claim.Data
-
-	return nil
+	if claims, ok := t.Claims.(jwt.MapClaims); !ok {
+		return errors.New("Could not convert JWT to map claims")
+	} else {
+		b := claims["claims"].(string)
+		return json.Unmarshal([]byte(b), v)
+	}
 }
