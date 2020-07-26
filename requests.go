@@ -85,6 +85,55 @@ func ReadJSONBody(r *http.Request, schema ozzo.Validatable) {
 	}
 }
 
+// ReadBodyJSONArr is read JSON body for arrays. Was too lazy to generalise or name well.
+func ReadJSONBodyArr(r *http.Request, schema []ozzo.Validatable) {
+	var buffer bytes.Buffer
+
+	// copy request body to in memory buffer while being read
+	readSplit := io.TeeReader(r.Body, &buffer)
+	body, err := ioutil.ReadAll(readSplit)
+	if err != nil {
+		panic(err)
+	}
+
+	// return what you collected
+	r.Body = ioutil.NopCloser(&buffer)
+
+	content := r.Header.Get("Content-Type")
+	if !strings.Contains(content, "application/json") || len(body) == 0 {
+		// tell the user all the required attributes
+		err = ozzo.Validate(schema)
+		if err != nil {
+			panic(APIError{
+				Code:    http.StatusBadRequest,
+				Message: "We could not validate your request.",
+				Meta:    err,
+			})
+		} else {
+			return
+		}
+	}
+
+	err = json.Unmarshal(body, &schema)
+	if err != nil {
+		panic(APIError{
+			Code:    http.StatusBadRequest,
+			Message: "We cannot understand your request.",
+			Err:     err,
+		})
+	}
+
+	// validate parsed JSON data
+	err = ozzo.Validate(schema)
+	if err != nil {
+		panic(APIError{
+			Code:    http.StatusBadRequest,
+			Message: "We could not validate your request.",
+			Meta:    err,
+		})
+	}
+}
+
 // IDParam extracts a uint URL parameter from the given request
 func IDParam(r *http.Request, name string) uint {
 	param := chi.URLParam(r, name)

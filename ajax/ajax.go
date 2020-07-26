@@ -16,7 +16,7 @@ func Mock(req *http.Request, handler http.Handler) *httptest.ResponseRecorder {
 	return rr
 }
 
-// Run runst the request and parses the response into v.
+// Run runs the request and parses the response into v.
 func Run(r *http.Request, v interface{}, client http.Client) error {
 	var err error
 	var resp *http.Response

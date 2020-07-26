@@ -50,7 +50,7 @@ func RandomIntChoice(elems []int) int {
 
 // RandomDigits returns a string of numbers based on len
 func RandomDigits(len int) string {
-	ps := mrand.Perm(9)
+	ps := mrand.Perm(len)
 	var strps []string
 
 	for _, v := range ps {
