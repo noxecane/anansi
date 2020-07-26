@@ -38,11 +38,11 @@ func Recoverer(next http.Handler) http.Handler {
 				} else {
 					fmt.Fprintf(os.Stderr, "Panic: %+v\n", rvr)
 				}
-				// debug.PrintStack()
 
 				if e, ok := rvr.(APIError); ok {
 					SendError(r, w, e)
 				} else {
+					debug.PrintStack()
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				}
 			}
