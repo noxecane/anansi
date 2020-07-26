@@ -85,8 +85,8 @@ func ReadJSONBody(r *http.Request, schema ozzo.Validatable) {
 	}
 }
 
-// ReadBodyJSONArr is read JSON body for arrays. Was too lazy to generalise or name well.
-func ReadJSONBodyArr(r *http.Request, schema []ozzo.Validatable) {
+// ReadJSONRaw is ReadJSON for arrays/maps. Was too lazy to generalise or name well.
+func ReadJSONRaw(r *http.Request, schema interface{}) {
 	var buffer bytes.Buffer
 
 	// copy request body to in memory buffer while being read
