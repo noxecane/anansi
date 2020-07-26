@@ -45,10 +45,7 @@ func (ts *TokenStore) Commission(t time.Duration, key string, data interface{}) 
 		return "", err
 	}
 
-	// One would naturally prefer hash maps but they don't support individual subkey expiry.
-	tokenKey := fmt.Sprintf("%s::%s", ts.namespace, token)
-
-	if _, err = ts.redis.Set(tokenKey, encoded, t).Result(); err != nil {
+	if _, err = ts.redis.Set(token, encoded, t).Result(); err != nil {
 		return "", err
 	}
 
@@ -57,8 +54,7 @@ func (ts *TokenStore) Commission(t time.Duration, key string, data interface{}) 
 
 // Peek gets the data the token references without changing its lifetime.
 func (ts *TokenStore) Peek(token string, data interface{}) error {
-	tokenKey := fmt.Sprintf("%s::%s", ts.namespace, token)
-	return ts.peekToken(tokenKey, data)
+	return ts.peekToken(token, data)
 }
 
 // Refresh loads the data the token references and refreshes it's lifetime so it can last
@@ -67,12 +63,11 @@ func (ts *TokenStore) Peek(token string, data interface{}) error {
 func (ts *TokenStore) Refresh(token string, timeout time.Duration, data interface{}) error {
 	var err error
 
-	tokenKey := fmt.Sprintf("%s::%s", ts.namespace, token)
-	if err = ts.peekToken(tokenKey, data); err != nil {
+	if err = ts.peekToken(token, data); err != nil {
 		return err
 	}
 
-	if _, err = ts.redis.Expire(tokenKey, timeout).Result(); err != nil {
+	if _, err = ts.redis.Expire(token, timeout).Result(); err != nil {
 		return err
 	}
 
@@ -84,12 +79,11 @@ func (ts *TokenStore) Refresh(token string, timeout time.Duration, data interfac
 func (ts *TokenStore) Decommission(token string, data interface{}) error {
 	var err error
 
-	tokenKey := fmt.Sprintf("%s::%s", ts.namespace, token)
-	if err = ts.peekToken(tokenKey, data); err != nil {
+	if err = ts.peekToken(token, data); err != nil {
 		return err
 	}
 
-	if _, err = ts.redis.Del(tokenKey).Result(); err != nil {
+	if _, err = ts.redis.Del(token).Result(); err != nil {
 		return err
 	}
 
