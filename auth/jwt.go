@@ -14,6 +14,7 @@ const expiredErr = jwt.ValidationErrorExpired | jwt.ValidationErrorNotValidYet
 var (
 	ErrJWTExpired   = errors.New("Your JWT token has expired")
 	ErrInvalidToken = errors.New("Your token is an invalid JWT token")
+	ErrNoClaims     = errors.New("There are no claims in your token")
 )
 
 // EncodeJWT creates a JWT token for some given struct using the HMAC algorithm.
@@ -54,6 +55,10 @@ func DecodeJWT(secret []byte, token []byte, v interface{}) error {
 	if claims, ok := t.Claims.(jwt.MapClaims); !ok {
 		return errors.New("Could not convert JWT to map claims")
 	} else {
+		if claims["claims"] == nil {
+			return nil
+		}
+
 		b := claims["claims"].(string)
 		return json.Unmarshal([]byte(b), v)
 	}
