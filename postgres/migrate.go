@@ -1,10 +1,12 @@
 package postgres
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
@@ -30,17 +32,29 @@ func Migrate(dir, schema string, env PostgresEnv) error {
 		sslMode,
 	)
 
-	if schema != "" {
-		postgresURL = fmt.Sprintf("%s&search_path=%s", postgresURL, schema)
-	}
-
 	var mig *migrate.Migrate
+	var db *sql.DB
+	var driver database.Driver
 	var err error
 
 	dir = fmt.Sprintf("file:///%s", dir)
-	if mig, err = migrate.New(dir, postgresURL); err != nil {
+	if db, err = sql.Open("postgres", postgresURL); err != nil {
 		return err
 	}
+	defer db.Close()
+
+	conf := postgres.Config{
+		DatabaseName: env.PostgresDatabase,
+		SchemaName:   schema,
+	}
+	if driver, err = postgres.WithInstance(db, &conf); err != nil {
+		return err
+	}
+
+	if mig, err = migrate.NewWithDatabaseInstance(dir, "postgres", driver); err != nil {
+		return err
+	}
+	defer mig.Close()
 
 	if err = mig.Up(); err != nil && err != migrate.ErrNoChange {
 		return err
