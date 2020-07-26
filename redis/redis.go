@@ -21,10 +21,10 @@ type RedisEnv struct {
 }
 
 // ConnectDB initialises a global connection for `Client`
-func ConnectClient(env RedisEnv) {
+func ConnectClient(env RedisEnv, opts *redis.Options) {
 	redisOnce.Do(func() {
 		var err error
-		Client, err = NewRedisClient(env)
+		Client, err = NewRedisClient(env, opts)
 
 		if err != nil {
 			panic(err)
@@ -33,12 +33,11 @@ func ConnectClient(env RedisEnv) {
 }
 
 // NewRedisClient creates a client for redis and tests its connection
-func NewRedisClient(env RedisEnv) (*redis.Client, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", env.RedisHost, env.RedisPort),
-		Password: env.RedisPassword,
-		DB:       0,
-	})
+func NewRedisClient(env RedisEnv, opts *redis.Options) (*redis.Client, error) {
+	opts.Addr = fmt.Sprintf("%s:%d", env.RedisHost, env.RedisPort)
+	opts.Password = env.RedisPassword
+
+	client := redis.NewClient(opts)
 
 	// test the connection
 	_, err := client.Ping().Result()
