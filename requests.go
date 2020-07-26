@@ -36,8 +36,8 @@ func ReadBody(r *http.Request) []byte {
 	return body
 }
 
-// ReadBodyJSON is `ReadBody` except that it decodes
-func ReadJSONBody(r *http.Request, schema ozzo.Validatable) {
+// ReadJSON is `ReadBody` except that it decodes JSON and validates the result.
+func ReadJSON(r *http.Request, schema ozzo.Validatable) {
 	var buffer bytes.Buffer
 
 	// copy request body to in memory buffer while being read
