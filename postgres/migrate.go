@@ -10,8 +10,7 @@ import (
 
 // Migrate runs the SQL migration files in dir using go-migrate.
 // This means you have to ensure the SQL files follow the go-migrate format
-// Also note that the directory must be relative to final executable without
-// the preceding "/" or "./".
+// Also note that the directory must be an absolute path
 func Migrate(dir, schema string, env PostgresEnv) error {
 	// interprete the secure mode flag
 	var sslMode string
@@ -38,7 +37,7 @@ func Migrate(dir, schema string, env PostgresEnv) error {
 	var mig *migrate.Migrate
 	var err error
 
-	dir = fmt.Sprintf("file://%s", dir)
+	dir = fmt.Sprintf("file:///%s", dir)
 	if mig, err = migrate.New(dir, postgresURL); err != nil {
 		return err
 	}
