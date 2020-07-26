@@ -28,7 +28,6 @@ func TestDecodeJWT(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// token := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiIiLCJpc3QiOiIiLCJpYXQiOjE1OTU3OTE0NDAsImV4cCI6MTU5NTc5NTA0MCwianRpIjoiand0X25vbmNlIn0.cBCDA2bE5tc9VMhD8bJuDK4_iYACPgFluFJQUaujqV8"
 	var loaded jwtStruct
 	if err := DecodeJWT([]byte("mysecret"), []byte(token), &loaded); err != nil {
 		t.Fatal(err)
