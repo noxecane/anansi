@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/go-redis/redis/v7"
@@ -17,9 +16,8 @@ var (
 )
 
 type TokenStore struct {
-	redis     *redis.Client
-	namespace string
-	secret    []byte
+	redis  *redis.Client
+	secret []byte
 }
 
 func NewTokenStore(r *redis.Client, secret []byte) *TokenStore {
@@ -134,8 +132,7 @@ func (ts *TokenStore) Revoke(key string) error {
 	token = hex.EncodeToString(sig.Sum(nil))
 
 	var del int64
-	tokenKey := fmt.Sprintf("%s::%s", ts.namespace, token)
-	if del, err = ts.redis.Del(tokenKey).Result(); err != nil {
+	if del, err = ts.redis.Del(token).Result(); err != nil {
 		return err
 	}
 
