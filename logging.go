@@ -1,7 +1,6 @@
 package anansi
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"regexp"
@@ -13,17 +12,6 @@ import (
 )
 
 var kubeProbe = regexp.MustCompile("(?i)kube-probe|prometheus")
-
-// ZeroLogger is a wrapper around zero log for chi
-type ZeroLogger struct {
-	BaseLog zerolog.Logger
-	Exclude []string
-}
-
-// ZeroLogEntry is an info event for request detauis
-type ZeroLogEntry struct {
-	Log *zerolog.Logger
-}
 
 func NewLogger(service string) zerolog.Logger {
 	host, err := os.Hostname()
@@ -40,67 +28,77 @@ func NewLogger(service string) zerolog.Logger {
 		Logger()
 }
 
-// ZeroMiddleware creates a middleware for logging http Requests
-func ZeroMiddleware(log zerolog.Logger, exclude ...string) func(next http.Handler) http.Handler {
-	return middleware.RequestLogger(ZeroLogger{BaseLog: log, Exclude: exclude})
-}
-
-// Panic logs final requests that failed with a panic
-func (e *ZeroLogEntry) Panic(v interface{}, _ []byte) {
-	e.Log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
-		return ctx.
-			Str("error", fmt.Sprintf("%+v", v))
-	})
-}
-
-// Write logs the response metadata for a request
-func (e *ZeroLogEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, extra interface{}) {
-	e.Log.
-		Info().
-		Int("status", status).
-		Int("length", bytes).
-		Float64("elapsed", float64(elapsed.Milliseconds())).
-		Interface("headers", formatHeaders(header)).
-		Msg("")
-}
-
-// NewLogEntry creates a special log for each request and storing it's request
-// info for write logs or panic logs
-func (l ZeroLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
-	newLogger := l.BaseLog.With().Logger()
-	entry := &ZeroLogEntry{Log: &newLogger}
-
-	if kubeProbe.MatchString(r.UserAgent()) {
-		return entry
-	}
-
-	if reqID := middleware.GetReqID(r.Context()); reqID != "" {
-		newLogger.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
-			return ctx.Str("id", reqID)
+// stolen from https://github.com/rs/zerolog/blob/master/hlog/hlog.go
+func AttachLogger(log zerolog.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Create a copy of the logger (including internal context slice)
+			// to prevent data race when using UpdateContext.
+			l := log.With().Logger()
+			r = r.WithContext(l.WithContext(r.Context()))
+			next.ServeHTTP(w, r)
 		})
 	}
+}
 
-	formattedHeaders := formatHeaders(r.Header)
+// RequestLogger updates a future log entry with the request parameters such as request ID and headers.
+func RequestLogger() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log := zerolog.Ctx(r.Context())
 
-	newLogger.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
-		return ctx.
-			Str("method", r.Method).
-			Str("remote_address", r.RemoteAddr).
-			Str("url", r.URL.String()).
-			Interface("headers", formattedHeaders)
-	})
+			if reqID := middleware.GetReqID(r.Context()); reqID != "" {
+				log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
+					return ctx.Str("id", reqID)
+				})
+			}
 
-	requestBody := ReadBody(r)
+			formattedHeaders := formatHeaders(r.Header)
 
-	if len(requestBody) == 0 {
-		return entry
+			log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
+				return ctx.
+					Str("method", r.Method).
+					Str("remote_address", r.RemoteAddr).
+					Str("url", r.URL.String()).
+					Interface("headers", formattedHeaders)
+			})
+
+			requestBody := ReadBody(r)
+
+			if len(requestBody) == 0 {
+				return
+			}
+
+			log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
+				return ctx.RawJSON("request", CompactJSON(requestBody))
+			})
+
+			next.ServeHTTP(w, r)
+		})
 	}
+}
 
-	entry.Log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
-		return ctx.RawJSON("request", CompactJSON(requestBody))
-	})
+func ResponseLogger() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log := zerolog.Ctx(r.Context())
 
-	return entry
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+
+			t1 := time.Now()
+			defer func() {
+				log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
+					return ctx.
+						Int("status", ww.Status()).
+						Int("length", ww.BytesWritten()).
+						Float64("elapsed", float64(time.Since(t1).Milliseconds())).
+						Interface("headers", formatHeaders(ww.Header()))
+				})
+			}()
+
+			next.ServeHTTP(ww, r)
+		})
+	}
 }
 
 func formatHeaders(headers http.Header) map[string]interface{} {

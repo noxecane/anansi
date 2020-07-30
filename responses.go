@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/go-chi/chi/middleware"
 	"github.com/rs/zerolog"
 )
 
@@ -13,14 +12,17 @@ import (
 // sure what deserves to be logged gets logged
 func SendJSON(r *http.Request, w http.ResponseWriter, code int, v interface{}) {
 	raw, _ := json.Marshal(v)
-	entry := middleware.GetLogEntry(r).(*ZeroLogEntry)
+	log := zerolog.Ctx(r.Context())
 
 	// log API responses
 	if v != nil {
-		entry.Log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
+		log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
 			return ctx.RawJSON("response", CompactJSON(raw))
 		})
 	}
+
+	// Send the actual logs
+	log.Info().Msg("")
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
