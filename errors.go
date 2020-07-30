@@ -6,7 +6,7 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/go-chi/chi/middleware"
+	"github.com/rs/zerolog"
 )
 
 // APIError is a struct describing an error
@@ -33,9 +33,10 @@ func Recoverer(env string) func(http.Handler) http.Handler {
 			defer func() {
 				if rvr := recover(); rvr != nil && rvr != http.ErrAbortHandler {
 
-					logEntry := middleware.GetLogEntry(r)
-					if logEntry != nil {
-						logEntry.Panic(rvr, debug.Stack())
+					log := zerolog.Ctx(r.Context())
+					if log != nil {
+						err := rvr.(error) // kill yourself
+						log.Err(err).Msg("")
 					} else {
 						fmt.Fprintf(os.Stderr, "Panic: %+v\n", rvr)
 					}
