@@ -158,7 +158,7 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 				})
 			}
 
-			if err := DecodeJWT(s.store.secret, []byte(token), session); err != nil {
+			if err := DecodeJWT(s.store.secret, []byte(token), &session); err != nil {
 				panic(anansi.APIError{
 					Code:    http.StatusUnauthorized,
 					Message: err.Error(),
