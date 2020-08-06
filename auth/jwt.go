@@ -22,9 +22,9 @@ func EncodeJWT(secret []byte, t time.Duration, v interface{}) (string, error) {
 	str, _ := json.Marshal(v)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"claims": string(str),
-		"iat":    time.Now().Unix(),
-		"exp":    time.Now().Add(t).Unix(),
+		"claim": string(str),
+		"iat":   time.Now().Unix(),
+		"exp":   time.Now().Add(t).Unix(),
 	})
 
 	return token.SignedString(secret)
@@ -55,11 +55,11 @@ func DecodeJWT(secret []byte, token []byte, v interface{}) error {
 	if claims, ok := t.Claims.(jwt.MapClaims); !ok {
 		return errors.New("Could not convert JWT to map claims")
 	} else {
-		if claims["claims"] == nil {
+		if claims["claim"] == nil {
 			return nil
 		}
 
-		b := claims["claims"].(string)
+		b := claims["claim"].(string)
 		return json.Unmarshal([]byte(b), v)
 	}
 }
