@@ -6,7 +6,8 @@ import (
 )
 
 type jwtStruct struct {
-	Name string `json:"name"`
+	Name      string `json:"name"`
+	Workspace string `json:"workspace"`
 }
 
 func TestEncodeJWT(t *testing.T) {
