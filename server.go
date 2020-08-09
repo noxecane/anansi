@@ -2,18 +2,19 @@ package anansi
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/rs/zerolog"
 )
 
-func ListenForInterrupt(log zerolog.Logger, cancel context.CancelFunc) {
+// CancelOnInterrupt cancels a context when it receives an interrupt signal
+func CancelOnInterrupt(cancel context.CancelFunc, log zerolog.Logger) {
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
 	// wait for Quit signal
 	<-quit
