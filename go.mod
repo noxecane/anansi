@@ -12,6 +12,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.11.0
 	github.com/joho/godotenv v1.3.0
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/mitchellh/mapstructure v1.3.3
 	github.com/rs/cors v1.7.0
 	github.com/rs/zerolog v1.19.0
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
