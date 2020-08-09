@@ -22,7 +22,9 @@ import (
 func DefaultMiddleware(router *chi.Mux, appEnv string, log zerolog.Logger) {
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
-	router.Use(ZeroMiddleware(log, appEnv))
+	router.Use(AttachLogger(log))
+	router.Use(RequestLogger())
+	router.Use(ResponseLogger())
 	router.Use(Recoverer(appEnv))
 	router.Use(middleware.RedirectSlashes)
 	router.Use(middleware.Compress(5))
