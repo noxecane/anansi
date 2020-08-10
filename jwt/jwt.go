@@ -44,7 +44,7 @@ func Decode(key string, secret []byte, tokenBytes []byte, v interface{}) error {
 		return secret, nil
 	})
 
-	if !token.Valid {
+	if token == nil || !token.Valid {
 		if verr, ok := err.(*jwt.ValidationError); ok {
 			switch {
 			case verr.Errors&jwt.ValidationErrorMalformed != 0:
