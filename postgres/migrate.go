@@ -13,24 +13,7 @@ import (
 // Migrate runs the SQL migration files in dir using go-migrate.
 // This means you have to ensure the SQL files follow the go-migrate format
 // Also note that the directory must be an absolute path
-func Migrate(dir, schema string, env PostgresEnv) error {
-	// interprete the secure mode flag
-	var sslMode string
-	if env.PostgresSecureMode {
-		sslMode = "require"
-	} else {
-		sslMode = "disable"
-	}
-
-	postgresURL := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
-		env.PostgresUser,
-		env.PostgresPassword,
-		env.PostgresHost,
-		env.PostgresPort,
-		env.PostgresDatabase,
-		sslMode,
-	)
+func Migrate(dir, dbName, schema string, postgresURL string) error {
 
 	var mig *migrate.Migrate
 	var db *sql.DB
@@ -44,7 +27,7 @@ func Migrate(dir, schema string, env PostgresEnv) error {
 	defer db.Close()
 
 	conf := postgres.Config{
-		DatabaseName: env.PostgresDatabase,
+		DatabaseName: dbName,
 		SchemaName:   schema,
 	}
 	if driver, err = postgres.WithInstance(db, &conf); err != nil {

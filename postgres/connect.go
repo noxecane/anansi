@@ -7,17 +7,6 @@ import (
 	"github.com/go-pg/pg/v9"
 )
 
-// PostgresEnv is the definition of environment variables needed
-// to setup a postgres connection
-type PostgresEnv struct {
-	PostgresHost       string `required:"true" split_words:"true"`
-	PostgresPort       int    `required:"true" split_words:"true"`
-	PostgresSecureMode bool   `required:"true" split_words:"true"`
-	PostgresUser       string `required:"true" split_words:"true"`
-	PostgresPassword   string `required:"true" split_words:"true"`
-	PostgresDatabase   string `required:"true" split_words:"true"`
-}
-
 func SetSchema(schema string, opts *pg.Options) {
 	opts.ApplicationName = schema
 	opts.OnConnect = func(c *pg.Conn) error {
