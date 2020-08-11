@@ -15,6 +15,7 @@ require (
 	github.com/mitchellh/mapstructure v1.3.3
 	github.com/rs/cors v1.7.0
 	github.com/rs/zerolog v1.19.0
-	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
+	github.com/satori/go.uuid v1.2.0
+	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	syreclabs.com/go/faker v1.2.2
 )
