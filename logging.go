@@ -7,7 +7,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var kubeProbe = regexp.MustCompile("(?i)kube-probe|prometheus")
+var DumpLog = regexp.MustCompile("(?i)kube-probe|prometheus")
 
 func NewLogger(service string) zerolog.Logger {
 	host, err := os.Hostname()
