@@ -17,7 +17,13 @@ func SendJSON(r *http.Request, w http.ResponseWriter, code int, v interface{}) {
 	// log API responses
 	if v != nil {
 		log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
-			return ctx.RawJSON("response", CompactJSON(raw))
+			buffer := new(bytes.Buffer)
+
+			if err := json.Compact(buffer, raw); err != nil {
+				panic(err)
+			}
+
+			return ctx.RawJSON("response", buffer.Bytes())
 		})
 	}
 
@@ -38,15 +44,4 @@ func SendSuccess(r *http.Request, w http.ResponseWriter, v interface{}) {
 // SendError sends a JSON error message
 func SendError(r *http.Request, w http.ResponseWriter, err APIError) {
 	SendJSON(r, w, err.Code, err)
-}
-
-// CompactJSON removes insignificant space from JSON
-func CompactJSON(raw []byte) []byte {
-	buffer := new(bytes.Buffer)
-
-	if err := json.Compact(buffer, raw); err != nil {
-		panic(err)
-	}
-
-	return buffer.Bytes()
 }

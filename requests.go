@@ -26,111 +26,61 @@ func ReadBody(r *http.Request) []byte {
 		panic(err)
 	}
 
-	if buffer.Len() == 0 {
-		return make([]byte, 0)
-	}
-
 	// return what you collected
 	r.Body = ioutil.NopCloser(&buffer)
 
 	return body
 }
 
-// ReadJSON is `ReadBody` except that it decodes JSON and validates the result.
-func ReadJSON(r *http.Request, schema ozzo.Validatable) {
-	var buffer bytes.Buffer
-
-	// copy request body to in memory buffer while being read
-	readSplit := io.TeeReader(r.Body, &buffer)
-	body, err := ioutil.ReadAll(readSplit)
-	if err != nil {
-		panic(err)
+// ReadJSON decodes the JSON body of the request without destroying the request and
+// validates it. If the content type is not JSON it fails with a 415. Otherwise it fails
+// with a 400 on validation errors.
+func ReadJSON(r *http.Request, v interface{}) {
+	// make sure we are reading a JSON type
+	contentType := r.Header.Get("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		panic(APIError{
+			Code:    http.StatusUnsupportedMediaType,
+			Message: http.StatusText(http.StatusUnsupportedMediaType),
+		})
 	}
 
-	// return what you collected
+	// copy request body to in memory buffer while being read
+	var buffer bytes.Buffer
+	bodyReader := io.TeeReader(r.Body, &buffer)
+
+	// make sure others can read the body
 	r.Body = ioutil.NopCloser(&buffer)
 
-	content := r.Header.Get("Content-Type")
-	if !strings.Contains(content, "application/json") || len(body) == 0 {
+	err := json.NewDecoder(bodyReader).Decode(v)
+	switch {
+	case err == io.EOF:
 		// tell the user all the required attributes
-		err = schema.Validate()
+		err := ozzo.Validate(v)
 		if err != nil {
 			panic(APIError{
 				Code:    http.StatusBadRequest,
 				Message: "We could not validate your request.",
 				Meta:    err,
 			})
-		} else {
-			return
 		}
-	}
-
-	err = json.Unmarshal(body, &schema)
-	if err != nil {
+		return
+	case err != nil:
 		panic(APIError{
 			Code:    http.StatusBadRequest,
-			Message: "We cannot understand your request.",
+			Message: "We cannot parse your request body.",
 			Err:     err,
 		})
-	}
-
-	// validate parsed JSON data
-	err = schema.Validate()
-	if err != nil {
-		panic(APIError{
-			Code:    http.StatusBadRequest,
-			Message: "We could not validate your request.",
-			Meta:    err,
-		})
-	}
-}
-
-// ReadJSONRaw is ReadJSON for arrays/maps. Was too lazy to generalise or name well.
-func ReadJSONRaw(r *http.Request, schema interface{}) {
-	var buffer bytes.Buffer
-
-	// copy request body to in memory buffer while being read
-	readSplit := io.TeeReader(r.Body, &buffer)
-	body, err := ioutil.ReadAll(readSplit)
-	if err != nil {
-		panic(err)
-	}
-
-	// return what you collected
-	r.Body = ioutil.NopCloser(&buffer)
-
-	content := r.Header.Get("Content-Type")
-	if !strings.Contains(content, "application/json") || len(body) == 0 {
-		// tell the user all the required attributes
-		err = ozzo.Validate(schema)
+	default:
+		// validate parsed JSON data
+		err = ozzo.Validate(v)
 		if err != nil {
 			panic(APIError{
 				Code:    http.StatusBadRequest,
 				Message: "We could not validate your request.",
 				Meta:    err,
 			})
-		} else {
-			return
 		}
-	}
-
-	err = json.Unmarshal(body, &schema)
-	if err != nil {
-		panic(APIError{
-			Code:    http.StatusBadRequest,
-			Message: "We cannot understand your request.",
-			Err:     err,
-		})
-	}
-
-	// validate parsed JSON data
-	err = ozzo.Validate(schema)
-	if err != nil {
-		panic(APIError{
-			Code:    http.StatusBadRequest,
-			Message: "We could not validate your request.",
-			Meta:    err,
-		})
 	}
 }
 

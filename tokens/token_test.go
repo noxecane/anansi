@@ -1,4 +1,4 @@
-package auth
+package tokens
 
 import (
 	"os"
@@ -9,7 +9,7 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
-var sharedTestStore *TokenStore
+var sharedTestStore *Store
 var client *redis.Client
 
 type SampleStruct struct {
@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	sharedTestStore = &TokenStore{redis: client, secret: []byte("mykeys")}
+	sharedTestStore = &Store{redis: client, secret: []byte("mykeys")}
 
 	code := m.Run()
 
@@ -58,7 +58,7 @@ func TestCommissionDecomission(t *testing.T) {
 	var err error
 
 	t.Run("the token is associated with the data", func(t *testing.T) {
-		if token, err = sharedTestStore.Commission(time.Millisecond*300, sample.User, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Second, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
 
@@ -77,10 +77,10 @@ func TestCommissionDecomission(t *testing.T) {
 	})
 
 	t.Run("the token expires after timeout", func(t *testing.T) {
-		if token, err = sharedTestStore.Commission(time.Millisecond*100, sample.User, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Second, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Second)
 
 		if err = sharedTestStore.Decommission(token, &SampleStruct{}); err == nil && err == ErrTokenNotFound {
 			t.Errorf("Expected error to be thrown")
@@ -94,7 +94,7 @@ func TestCommissionDecomission(t *testing.T) {
 	})
 }
 
-func TestCommissionRefresh(t *testing.T) {
+func TestCommissionExtend(t *testing.T) {
 	sample := SampleStruct{Message: "A sample message"}
 
 	defer flushRedis(t)
@@ -103,20 +103,16 @@ func TestCommissionRefresh(t *testing.T) {
 	var err error
 
 	t.Run("the token gets refreshed for an extra 300ms", func(t *testing.T) {
-		if token, err = sharedTestStore.Commission(time.Millisecond*300, sample.User, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Second, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 800)
 
-		temp := new(SampleStruct)
-		if err = sharedTestStore.Refresh(token, time.Second, temp); err != nil {
+		if err = sharedTestStore.Extend(token, time.Second); err != nil {
 			t.Fatal(err)
 		}
-		if temp.Message != sample.Message {
-			t.Errorf("Expected message to be \"%s\", got %v", sample.Message, temp)
-		}
 
-		time.Sleep(time.Millisecond * 700)
+		time.Sleep(time.Millisecond * 800)
 
 		result := new(SampleStruct)
 		if err = sharedTestStore.Decommission(token, result); err != nil {
@@ -128,12 +124,12 @@ func TestCommissionRefresh(t *testing.T) {
 	})
 
 	t.Run("the token expires after original time plus refresh timeout", func(t *testing.T) {
-		if token, err = sharedTestStore.Commission(time.Millisecond*300, sample.User, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Second, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(time.Millisecond * 100)
 
-		if err = sharedTestStore.Refresh(token, time.Second, &SampleStruct{}); err != nil {
+		if err = sharedTestStore.Extend(token, time.Second); err != nil {
 			t.Fatal(err)
 		}
 
@@ -145,12 +141,12 @@ func TestCommissionRefresh(t *testing.T) {
 	})
 
 	t.Run("it's impossible to refresh an expired token", func(t *testing.T) {
-		if token, err = sharedTestStore.Commission(time.Millisecond*100, sample.User, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Second, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Second)
 
-		if err = sharedTestStore.Refresh(token, time.Millisecond*100, &SampleStruct{}); err == nil && err == ErrTokenNotFound {
+		if err = sharedTestStore.Extend(token, time.Second); err == nil && err == ErrTokenNotFound {
 			t.Errorf("Expected error to be thrown")
 		}
 	})
@@ -165,17 +161,17 @@ func TestCommissionPeek(t *testing.T) {
 	var err error
 
 	t.Run("the token doesn't expire till decommission is called", func(t *testing.T) {
-		if token, err = sharedTestStore.Commission(time.Millisecond*300, sample.User, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Second, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 300)
 
 		temp := new(SampleStruct)
 		if err = sharedTestStore.Peek(token, temp); err != nil {
 			t.Fatal(err)
 		}
 
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 300)
 
 		result := new(SampleStruct)
 		if err = sharedTestStore.Decommission(token, result); err != nil {
@@ -196,7 +192,7 @@ func TestCommissionRevoke(t *testing.T) {
 	var err error
 
 	t.Run("the token is rendered useless immediately", func(t *testing.T) {
-		if token, err = sharedTestStore.Commission(time.Millisecond*300, sample.User, sample); err != nil {
+		if token, err = sharedTestStore.Commission(time.Second, sample.User, sample); err != nil {
 			t.Fatal(err)
 		}
 
@@ -205,6 +201,64 @@ func TestCommissionRevoke(t *testing.T) {
 		}
 
 		if err = sharedTestStore.Peek(token, &SampleStruct{}); err == nil && err == ErrTokenNotFound {
+			t.Errorf("Expected error to be thrown")
+		}
+	})
+}
+
+func TestCommissionReset(t *testing.T) {
+	sample := SampleStruct{Message: "A sample message"}
+
+	defer flushRedis(t)
+
+	var token string
+	var err error
+
+	t.Run("the token gets refreshed for an extra 300ms", func(t *testing.T) {
+		if token, err = sharedTestStore.Commission(time.Second, sample.User, sample); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(time.Millisecond * 800)
+
+		if err = sharedTestStore.Extend(token, time.Second); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(time.Millisecond * 800)
+
+		result := new(SampleStruct)
+		if err = sharedTestStore.Decommission(token, result); err != nil {
+			t.Fatal(err)
+		}
+		if result.Message != sample.Message {
+			t.Errorf("Expected message to be \"%s\", got \"%s\"", sample.Message, result.Message)
+		}
+	})
+
+	t.Run("the token expires after original time plus refresh timeout", func(t *testing.T) {
+		if token, err = sharedTestStore.Commission(time.Second, sample.User, sample); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(time.Millisecond * 100)
+
+		if err = sharedTestStore.Extend(token, time.Second); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(time.Second)
+
+		if err = sharedTestStore.Decommission(token, &SampleStruct{}); err == nil && err == ErrTokenNotFound {
+			t.Errorf("Expected error to be thrown")
+		}
+	})
+
+	t.Run("it's impossible to refresh an expired token", func(t *testing.T) {
+		if token, err = sharedTestStore.Commission(time.Second, sample.User, sample); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(time.Second)
+
+		if err = sharedTestStore.Extend(token, time.Second); err == nil && err == ErrTokenNotFound {
 			t.Errorf("Expected error to be thrown")
 		}
 	})

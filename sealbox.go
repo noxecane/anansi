@@ -1,4 +1,4 @@
-package auth
+package anansi
 
 import (
 	"crypto/rand"
