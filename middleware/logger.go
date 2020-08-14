@@ -50,19 +50,17 @@ func TrackRequest() func(http.Handler) http.Handler {
 
 			requestBody := anansi.ReadBody(r)
 
-			if len(requestBody) == 0 {
-				return
+			if len(requestBody) != 0 {
+				log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
+					buffer := new(bytes.Buffer)
+
+					if err := json.Compact(buffer, requestBody); err != nil {
+						panic(err)
+					}
+
+					return ctx.RawJSON("request", buffer.Bytes())
+				})
 			}
-
-			log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
-				buffer := new(bytes.Buffer)
-
-				if err := json.Compact(buffer, requestBody); err != nil {
-					panic(err)
-				}
-
-				return ctx.RawJSON("request", buffer.Bytes())
-			})
 
 			next.ServeHTTP(w, r)
 		})
