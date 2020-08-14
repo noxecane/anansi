@@ -20,7 +20,7 @@ type Store struct {
 	secret []byte
 }
 
-func NewTokenStore(r *redis.Client, secret []byte) *Store {
+func NewStore(r *redis.Client, secret []byte) *Store {
 	return &Store{redis: r, secret: secret}
 }
 
