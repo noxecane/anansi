@@ -108,7 +108,7 @@ func TestCommissionExtend(t *testing.T) {
 		}
 		time.Sleep(time.Millisecond * 800)
 
-		if err = sharedTestStore.Extend(token, time.Second); err != nil {
+		if err = sharedTestStore.Extend(token, time.Second, &SampleStruct{}); err != nil {
 			t.Fatal(err)
 		}
 
@@ -129,7 +129,7 @@ func TestCommissionExtend(t *testing.T) {
 		}
 		time.Sleep(time.Millisecond * 100)
 
-		if err = sharedTestStore.Extend(token, time.Second); err != nil {
+		if err = sharedTestStore.Extend(token, time.Second, &SampleStruct{}); err != nil {
 			t.Fatal(err)
 		}
 
@@ -146,7 +146,7 @@ func TestCommissionExtend(t *testing.T) {
 		}
 		time.Sleep(time.Second)
 
-		if err = sharedTestStore.Extend(token, time.Second); err == nil && err == ErrTokenNotFound {
+		if err = sharedTestStore.Extend(token, time.Second, &SampleStruct{}); err == nil && err == ErrTokenNotFound {
 			t.Errorf("Expected error to be thrown")
 		}
 	})
@@ -220,7 +220,7 @@ func TestCommissionReset(t *testing.T) {
 		}
 		time.Sleep(time.Millisecond * 800)
 
-		if err = sharedTestStore.Extend(token, time.Second); err != nil {
+		if err = sharedTestStore.Extend(token, time.Second, &SampleStruct{}); err != nil {
 			t.Fatal(err)
 		}
 
@@ -241,7 +241,7 @@ func TestCommissionReset(t *testing.T) {
 		}
 		time.Sleep(time.Millisecond * 100)
 
-		if err = sharedTestStore.Extend(token, time.Second); err != nil {
+		if err = sharedTestStore.Extend(token, time.Second, &SampleStruct{}); err != nil {
 			t.Fatal(err)
 		}
 
@@ -258,7 +258,7 @@ func TestCommissionReset(t *testing.T) {
 		}
 		time.Sleep(time.Second)
 
-		if err = sharedTestStore.Extend(token, time.Second); err == nil && err == ErrTokenNotFound {
+		if err = sharedTestStore.Extend(token, time.Second, &SampleStruct{}); err == nil && err == ErrTokenNotFound {
 			t.Errorf("Expected error to be thrown")
 		}
 	})

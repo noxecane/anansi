@@ -74,10 +74,7 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 	}
 
 	if scheme == "Bearer" {
-		err = s.Store.Peek(token, session)
-		if err == nil {
-			err = s.Store.Extend(token, s.Timeout)
-		}
+		err = s.Store.Extend(token, s.Timeout, session)
 	} else {
 		err = jwt.Decode(s.ClaimsKey, s.Secret, []byte(token), session)
 	}

@@ -57,9 +57,13 @@ func (ts *Store) Peek(token string, data interface{}) error {
 // Extend sets the new duration before an existing token times out. Note that it doesn't
 // take into account how long the old token had to expire, as it uses the new duration
 // entirely.
-func (ts *Store) Extend(token string, timeout time.Duration) error {
+func (ts *Store) Extend(token string, timeout time.Duration, data interface{}) error {
 	var ok bool
 	var err error
+
+	if err := ts.peekToken(token, data); err != nil {
+		return err
+	}
 
 	if ok, err = ts.redis.Expire(token, timeout).Result(); err != nil {
 		return err
