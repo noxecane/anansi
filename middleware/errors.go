@@ -18,6 +18,7 @@ func Recoverer(env string) func(http.Handler) http.Handler {
 	return RecovererWithHandler(env, func(w http.ResponseWriter, r *http.Request, v interface{}) bool {
 		if e, ok := v.(anansi.APIError); ok {
 			anansi.SendError(r, w, e)
+			return true
 		}
 		return false
 	})
