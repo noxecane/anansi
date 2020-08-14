@@ -33,17 +33,16 @@ func RecovererWithHandler(env string, catch Catch) func(http.Handler) http.Handl
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if rvr := recover(); rvr != nil && rvr != http.ErrAbortHandler {
-
-					log := zerolog.Ctx(r.Context())
-					if log != nil {
-						err := rvr.(error) // kill yourself
-						log.Err(err).Msg("")
-					} else {
-						fmt.Fprintf(os.Stderr, "Panic: %+v\n", rvr)
-					}
-
 					// only do this if catch could not handle it.
 					if !catch(w, r, rvr) {
+						log := zerolog.Ctx(r.Context())
+						if log == nil {
+							err := rvr.(error) // kill yourself
+							log.Err(err).Msg("")
+						} else {
+							fmt.Fprintf(os.Stderr, "Panic: %+v\n", rvr)
+						}
+
 						if env == "dev" || env == "test" {
 							debug.PrintStack()
 						}
