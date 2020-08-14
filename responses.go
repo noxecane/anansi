@@ -30,7 +30,7 @@ func SendError(r *http.Request, w http.ResponseWriter, err APIError) {
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(err.Code)
 	_, _ = w.Write(raw)
 }
 
