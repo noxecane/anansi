@@ -6,12 +6,36 @@ import (
 	"net/http"
 
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
-// SendJSON response writes a JSON encoded version of `v` to the writer, making
-// sure what deserves to be logged gets logged
-func SendJSON(r *http.Request, w http.ResponseWriter, code int, v interface{}) {
+// SendSuccess sends a JSON success message with status code 200
+func SendSuccess(r *http.Request, w http.ResponseWriter, v interface{}) {
+	raw := getJSON(r, v)
+
+	log.Info().Msg("")
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(raw)
+}
+
+// SendError sends a JSON error message
+func SendError(r *http.Request, w http.ResponseWriter, err APIError) {
+	raw := getJSON(r, err)
+
+	log.Err(err).Msg("")
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(raw)
+}
+
+func getJSON(r *http.Request, v interface{}) []byte {
 	raw, _ := json.Marshal(v)
+
 	log := zerolog.Ctx(r.Context())
 
 	// log API responses
@@ -27,21 +51,5 @@ func SendJSON(r *http.Request, w http.ResponseWriter, code int, v interface{}) {
 		})
 	}
 
-	// Send the actual logs
-	log.Info().Msg("")
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(code)
-	_, _ = w.Write(raw)
-}
-
-// SendSuccess sends a JSON success message with status code 200
-func SendSuccess(r *http.Request, w http.ResponseWriter, v interface{}) {
-	SendJSON(r, w, 200, v)
-}
-
-// SendError sends a JSON error message
-func SendError(r *http.Request, w http.ResponseWriter, err APIError) {
-	SendJSON(r, w, err.Code, err)
+	return raw
 }
