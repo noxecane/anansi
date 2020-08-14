@@ -6,12 +6,12 @@ import (
 	"net/http"
 
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 // SendSuccess sends a JSON success message with status code 200
 func SendSuccess(r *http.Request, w http.ResponseWriter, v interface{}) {
-	raw := getJSON(r, v)
+	log := zerolog.Ctx(r.Context())
+	raw := getJSON(log, v)
 
 	log.Info().Msg("")
 
@@ -23,7 +23,8 @@ func SendSuccess(r *http.Request, w http.ResponseWriter, v interface{}) {
 
 // SendError sends a JSON error message
 func SendError(r *http.Request, w http.ResponseWriter, err APIError) {
-	raw := getJSON(r, err)
+	log := zerolog.Ctx(r.Context())
+	raw := getJSON(log, err)
 
 	log.Err(err).Msg("")
 
@@ -33,10 +34,8 @@ func SendError(r *http.Request, w http.ResponseWriter, err APIError) {
 	_, _ = w.Write(raw)
 }
 
-func getJSON(r *http.Request, v interface{}) []byte {
+func getJSON(log *zerolog.Logger, v interface{}) []byte {
 	raw, _ := json.Marshal(v)
-
-	log := zerolog.Ctx(r.Context())
 
 	// log API responses
 	if v != nil {
