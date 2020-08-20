@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi"
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/mitchellh/mapstructure"
 )
 
 // ReadBody extracts the bytes in a request body without destroying the  contents of the body
@@ -81,6 +82,47 @@ func ReadJSON(r *http.Request, v interface{}) {
 				Meta:    err,
 			})
 		}
+	}
+}
+
+func ReadQuery(r *http.Request, v interface{}) {
+	raw := r.URL.Query()
+	qMap := make(map[string]string)
+
+	for k := range raw {
+		qMap[k] = raw.Get(k)
+	}
+
+	// convert claims data map to struct
+	config := &mapstructure.DecoderConfig{
+		Result:           v,
+		TagName:          "json",
+		WeaklyTypedInput: true,
+	}
+	decoder, err := mapstructure.NewDecoder(config)
+
+	if err != nil {
+		panic(APIError{
+			Code:    http.StatusBadRequest,
+			Message: "We cannot parse your request body.",
+			Err:     err,
+		})
+	}
+
+	if err := decoder.Decode(qMap); err != nil {
+		panic(APIError{
+			Code:    http.StatusBadRequest,
+			Message: "We cannot parse your request body.",
+			Err:     err,
+		})
+	}
+
+	if err := ozzo.Validate(v); err != nil {
+		panic(APIError{
+			Code:    http.StatusBadRequest,
+			Message: "We could not validate your request.",
+			Meta:    err,
+		})
 	}
 }
 
