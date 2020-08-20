@@ -47,6 +47,8 @@ github.com/aws/aws-sdk-go v1.17.7/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN
 github.com/bitly/go-hostpool v0.0.0-20171023180738-a3a6125de932/go.mod h1:NOuUCSz6Q9T7+igc/hlvDOUdtWKryOrtFyIVABv/p7k=
 github.com/bkaradzic/go-lz4 v1.0.0/go.mod h1:0YdlkowM3VswSROI7qDxhRvJ3sLhlFrRRwjwegp5jy4=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869/go.mod h1:Ekp36dRnpXw/yCqJaO+ZrUyxD+3VXMFFr56k5XYrpB4=
+github.com/bxcodec/faker v1.5.0 h1:RIWOeAcM3ZHye1i8bQtHU2LfNOaLmHuRiCo60mNMOcQ=
+github.com/bxcodec/faker v2.0.1+incompatible h1:P0KUpUw5w6WJXwrPfv35oc91i4d8nf40Nwln+M/+faA=
 github.com/bxcodec/faker/v3 v3.5.0 h1:Rahy6dwbd6up0wbwbV7dFyQb+jmdC51kpATuUdnzfMg=
 github.com/bxcodec/faker/v3 v3.5.0/go.mod h1:gF31YgnMSMKgkvl+fyEo1xuSMbEuieyqfeslGYFjneM=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
@@ -100,10 +102,14 @@ github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-ozzo/ozzo-validation/v4 v4.2.1 h1:XALUNshPYumA7UShB7iM3ZVlqIBn0jfwjqAMIoyE1N0=
 github.com/go-ozzo/ozzo-validation/v4 v4.2.1/go.mod h1:2NKgrcHl3z6cJs+3Oo940FPRiTzuqKbvfrL2RxCj6Ew=
+github.com/go-ozzo/ozzo-validation/v4 v4.2.2 h1:5uhbQAuRK6taB9orHJXA5GtOCuQbsHktskg8aWciC68=
+github.com/go-ozzo/ozzo-validation/v4 v4.2.2/go.mod h1:2NKgrcHl3z6cJs+3Oo940FPRiTzuqKbvfrL2RxCj6Ew=
 github.com/go-pg/pg/v9 v9.0.0-beta.14/go.mod h1:T2Sr6bpTCOr2lUqOUMiXLMJqZHSUBKk1LdgSqjwhZfA=
 github.com/go-pg/pg/v9 v9.0.3/go.mod h1:Tm/Q3Vt6gdQOH6TTN1H/xLlIXc+Qrka7TZ6uREtu/eA=
 github.com/go-pg/pg/v9 v9.1.6 h1:IqBayenvp9EWjHncRE7//SRmQuktq60oeO1/MkEx3dY=
 github.com/go-pg/pg/v9 v9.1.6/go.mod h1:QM13HBLkdml4zcKOfUfGLymM6hb72aKTJLrmaH8rsFg=
+github.com/go-pg/pg/v9 v9.1.7 h1:JSAszC/xbOHmvS86fPnvxCQ288lR0ecX7yqxiPnBoNo=
+github.com/go-pg/pg/v9 v9.1.7/go.mod h1:QM13HBLkdml4zcKOfUfGLymM6hb72aKTJLrmaH8rsFg=
 github.com/go-pg/urlstruct v0.1.0/go.mod h1:2Nag+BIny6G/KYCkdt++ZnqU/VinzimGapKfs4kwlN0=
 github.com/go-pg/urlstruct v0.2.6/go.mod h1:dxENwVISWSOX+k87hDt0ueEJadD+gZWv3tHzwfmZPu8=
 github.com/go-pg/urlstruct v0.3.0 h1:ORiTb205uT7v7lvq4VUOQ4ddJ5TjFRlVRWqWsMBgek4=
