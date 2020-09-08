@@ -13,6 +13,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mitchellh/mapstructure v1.3.3
+	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.7.0
 	github.com/rs/zerolog v1.19.0
 	github.com/satori/go.uuid v1.2.0
