@@ -16,7 +16,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-// ReadBody extracts the bytes in a request body without destroying the  contents of the body
+// ReadBody extracts the bytes in a request body without destroying the contents of the body
 func ReadBody(r *http.Request) []byte {
 	var buffer bytes.Buffer
 
@@ -33,8 +33,8 @@ func ReadBody(r *http.Request) []byte {
 	return body
 }
 
-// ReadJSON decodes the JSON body of the request without destroying the request and
-// validates it. If the content type is not JSON it fails with a 415. Otherwise it fails
+// ReadJSON decodes the JSON body of the request and destroys to prevent possible issues with
+// writing a response. If the content type is not JSON it fails with a 415. Otherwise it fails
 // with a 400 on validation errors.
 func ReadJSON(r *http.Request, v interface{}) {
 	// make sure we are reading a JSON type
@@ -46,14 +46,7 @@ func ReadJSON(r *http.Request, v interface{}) {
 		})
 	}
 
-	// copy request body to in memory buffer while being read
-	var buffer bytes.Buffer
-	bodyReader := io.TeeReader(r.Body, &buffer)
-
-	// make sure others can read the body
-	r.Body = ioutil.NopCloser(&buffer)
-
-	err := json.NewDecoder(bodyReader).Decode(v)
+	err := json.NewDecoder(r.Body).Decode(v)
 	switch {
 	case err == io.EOF:
 		// tell the user all the required attributes
@@ -85,6 +78,8 @@ func ReadJSON(r *http.Request, v interface{}) {
 	}
 }
 
+// ReadQuery reads the requests URL query parameters into a struct.
+// It doesn't support multi-value parameters
 func ReadQuery(r *http.Request, v interface{}) {
 	raw := r.URL.Query()
 	qMap := make(map[string]string)
