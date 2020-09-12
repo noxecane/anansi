@@ -45,7 +45,7 @@ func EncodeStruct(secret []byte, t time.Duration, v interface{}) (string, error)
 
 	// we only accept structs
 	if r.Kind() != reflect.Struct {
-		return "", errors.Errorf("cannot not encode child struct; got %T", v)
+		return "", errors.Errorf("can only encode structs; got %T", v)
 	}
 
 	typ := r.Type()
