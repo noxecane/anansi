@@ -18,13 +18,14 @@ var (
 )
 
 type SessionStore struct {
-	Store   *tokens.Store
-	Timeout time.Duration
+	store   *tokens.Store
+	timeout time.Duration
+	secret  []byte
+	scheme  string
+}
 
-	Secret []byte
-
-	Scheme    string
-	ClaimsKey string
+func NewSessionStore(secret []byte, scheme string, timeout time.Duration, store *tokens.Store) *SessionStore {
+	return &SessionStore{store, timeout, secret, scheme}
 }
 
 // Load retrieves a user's session object based on the session key from the Authorization
@@ -32,30 +33,9 @@ type SessionStore struct {
 func (s *SessionStore) Load(r *http.Request, session interface{}) {
 	var err error
 
-	authHeader := r.Header.Get("Authorization")
+	scheme, token := getAuthorization(r)
 
-	// if there's no authorisation header, then there's no use going further
-	if len(authHeader) == 0 {
-		panic(APIError{
-			Code:    http.StatusUnauthorized,
-			Message: ErrHeaderNotSet.Error(),
-			Err:     ErrHeaderNotSet,
-		})
-	}
-
-	splitAuth := strings.Split(authHeader, " ")
-
-	// we are expecting "${Scheme} ${Token}"
-	if len(splitAuth) != 2 {
-		panic(APIError{
-			Code:    http.StatusUnauthorized,
-			Message: ErrAuthorisationFormat.Error(),
-			Err:     ErrAuthorisationFormat,
-		})
-	}
-
-	scheme := splitAuth[0]
-	if scheme != s.Scheme && scheme != "Bearer" {
+	if scheme != s.scheme && scheme != "bearer" {
 		panic(APIError{
 			Code:    http.StatusUnauthorized,
 			Message: ErrUnsupportedScheme.Error(),
@@ -63,9 +43,7 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 		})
 	}
 
-	token := splitAuth[1]
-
-	if len(token) == 0 {
+	if token == "" {
 		panic(APIError{
 			Code:    http.StatusUnauthorized,
 			Message: ErrEmptyToken.Error(),
@@ -73,10 +51,10 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 		})
 	}
 
-	if scheme == "Bearer" {
-		err = s.Store.Extend(token, s.Timeout, session)
+	if scheme == "bearer" {
+		err = s.store.Extend(token, s.timeout, session)
 	} else {
-		err = jwt.Decode(s.ClaimsKey, s.Secret, []byte(token), session)
+		err = jwt.DecodeEmbedded(s.secret, []byte(token), session)
 	}
 
 	if err != nil {
@@ -92,31 +70,8 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var session interface{}
-
-			authHeader := r.Header.Get("Authorization")
-			// if there's no authorisation header, then there's no use going further
-			if len(authHeader) == 0 {
-				panic(APIError{
-					Code:    http.StatusUnauthorized,
-					Message: ErrHeaderNotSet.Error(),
-					Err:     ErrHeaderNotSet,
-				})
-			}
-
-			splitAuth := strings.Split(authHeader, " ")
-
-			// we are expecting "${Scheme} ${Token}"
-			if len(splitAuth) != 2 {
-				panic(APIError{
-					Code:    http.StatusUnauthorized,
-					Message: ErrAuthorisationFormat.Error(),
-					Err:     ErrAuthorisationFormat,
-				})
-			}
-
-			scheme := splitAuth[0]
-			if scheme != s.Scheme {
+			scheme, token := getAuthorization(r)
+			if scheme != s.scheme {
 				panic(APIError{
 					Code:    http.StatusUnauthorized,
 					Message: ErrUnsupportedScheme.Error(),
@@ -124,9 +79,7 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 				})
 			}
 
-			token := splitAuth[1]
-
-			if len(token) == 0 {
+			if token == "" {
 				panic(APIError{
 					Code:    http.StatusUnauthorized,
 					Message: ErrEmptyToken.Error(),
@@ -134,7 +87,8 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 				})
 			}
 
-			if err := jwt.Decode(s.ClaimsKey, s.Secret, []byte(token), &session); err != nil {
+			// read and discard session data
+			if err := jwt.DecodeEmbedded(s.secret, []byte(token), &struct{}{}); err != nil {
 				panic(APIError{
 					Code:    http.StatusUnauthorized,
 					Message: err.Error(),
@@ -145,4 +99,28 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func getAuthorization(r *http.Request) (scheme, token string) {
+	authHeader := r.Header.Get("Authorization")
+
+	if authHeader == "" {
+		panic(APIError{
+			Code:    http.StatusUnauthorized,
+			Message: ErrHeaderNotSet.Error(),
+			Err:     ErrHeaderNotSet,
+		})
+	}
+
+	splitAuth := strings.Split(strings.TrimSpace(authHeader), " ")
+
+	if len(splitAuth) != 2 {
+		panic(APIError{
+			Code:    http.StatusUnauthorized,
+			Message: ErrAuthorisationFormat.Error(),
+			Err:     ErrAuthorisationFormat,
+		})
+	}
+
+	return strings.ToLower(splitAuth[0]), splitAuth[1]
 }
