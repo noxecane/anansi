@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/random-guys/siber/jwt"
-	"github.com/random-guys/siber/tokens"
+	"github.com/random-guys/go-siber/jwt"
+	"github.com/random-guys/go-siber/tokens"
 )
 
 var (

@@ -6,7 +6,7 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/random-guys/siber"
+	"github.com/random-guys/go-siber"
 	"github.com/rs/zerolog"
 )
 
