@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/middleware"
+	"github.com/random-guys/siber"
 	"github.com/rs/zerolog"
-	"github.com/tsaron/siber"
 )
 
 // AttachLogger attaches a new zerolog.Logger to each new HTTP request.

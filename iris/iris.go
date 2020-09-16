@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tsaron/siber/jwt"
+	"github.com/random-guys/siber/jwt"
 )
 
 type Config struct {

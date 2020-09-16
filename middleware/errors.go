@@ -6,8 +6,8 @@ import (
 	"os"
 	"runtime/debug"
 
+	"github.com/random-guys/siber"
 	"github.com/rs/zerolog"
-	"github.com/tsaron/siber"
 )
 
 type Catch func(w http.ResponseWriter, r *http.Request, v interface{}) bool

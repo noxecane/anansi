@@ -14,7 +14,7 @@ Helper tools for [go-chi](https://github.com/go-chi/chi)
 ## Install
 
 ```sh
-go get -u github.com/tsaron/ansi
+go get -u github.com/random-guys/go-siber
 ```
 
 ## Example
