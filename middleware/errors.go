@@ -7,7 +7,7 @@ import (
 	"runtime/debug"
 
 	"github.com/rs/zerolog"
-	"github.com/tsaron/anansi"
+	"github.com/tsaron/siber"
 )
 
 type Catch func(w http.ResponseWriter, r *http.Request, v interface{}) bool
@@ -28,8 +28,8 @@ func Recoverer(env string) func(http.Handler) http.Handler {
 						fmt.Fprintf(os.Stderr, "Panic: %+v\n", rvr)
 					}
 
-					if e, ok := rvr.(anansi.APIError); ok {
-						anansi.SendError(r, w, e)
+					if e, ok := rvr.(siber.APIError); ok {
+						siber.SendError(r, w, e)
 					} else {
 						if env == "dev" || env == "test" {
 							debug.PrintStack()

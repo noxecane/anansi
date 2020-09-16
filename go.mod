@@ -1,4 +1,4 @@
-module github.com/tsaron/anansi
+module github.com/tsaron/siber
 
 go 1.14
 

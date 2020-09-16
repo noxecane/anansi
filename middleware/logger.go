@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/rs/zerolog"
-	"github.com/tsaron/anansi"
+	"github.com/tsaron/siber"
 )
 
 // AttachLogger attaches a new zerolog.Logger to each new HTTP request.
@@ -48,7 +48,7 @@ func TrackRequest() func(http.Handler) http.Handler {
 					Interface("headers", formattedHeaders)
 			})
 
-			requestBody := anansi.ReadBody(r)
+			requestBody := siber.ReadBody(r)
 
 			if len(requestBody) != 0 {
 				log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {

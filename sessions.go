@@ -1,4 +1,4 @@
-package anansi
+package siber
 
 import (
 	"errors"
@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tsaron/anansi/jwt"
-	"github.com/tsaron/anansi/tokens"
+	"github.com/tsaron/siber/jwt"
+	"github.com/tsaron/siber/tokens"
 )
 
 var (
