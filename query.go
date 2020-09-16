@@ -174,7 +174,7 @@ func ReadQuery(r *http.Request, v interface{}) {
 	}
 
 	if err := ParseQuery(qMap, v); err != nil {
-		panic(APIError{
+		panic(JSendError{
 			Code:    http.StatusBadRequest,
 			Message: "We could not parse your request query.",
 			Err:     err,

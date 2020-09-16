@@ -8,6 +8,11 @@ import (
 	"github.com/rs/zerolog"
 )
 
+type jsendSuccess struct {
+	Code int         `json:"code"`
+	Data interface{} `json:"data"`
+}
+
 func Send(w http.ResponseWriter, code int, data []byte) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -22,7 +27,7 @@ func Send(w http.ResponseWriter, code int, data []byte) {
 // SendSuccess sends a JSON success message with status code 200
 func SendSuccess(r *http.Request, w http.ResponseWriter, v interface{}) {
 	log := zerolog.Ctx(r.Context())
-	raw := getJSON(log, v)
+	raw := getJSON(log, jsendSuccess{http.StatusOK, v})
 
 	log.Info().Msg("")
 
@@ -30,7 +35,7 @@ func SendSuccess(r *http.Request, w http.ResponseWriter, v interface{}) {
 }
 
 // SendError sends a JSON error message
-func SendError(r *http.Request, w http.ResponseWriter, err APIError) {
+func SendError(r *http.Request, w http.ResponseWriter, err JSendError) {
 	log := zerolog.Ctx(r.Context())
 	raw := getJSON(log, err)
 

@@ -39,7 +39,7 @@ func ReadJSON(r *http.Request, v interface{}) {
 	// make sure we are reading a JSON type
 	contentType := r.Header.Get("Content-Type")
 	if !strings.Contains(contentType, "application/json") {
-		panic(APIError{
+		panic(JSendError{
 			Code:    http.StatusUnsupportedMediaType,
 			Message: http.StatusText(http.StatusUnsupportedMediaType),
 		})
@@ -51,15 +51,15 @@ func ReadJSON(r *http.Request, v interface{}) {
 		// tell the user all the required attributes
 		err := ozzo.Validate(v)
 		if err != nil {
-			panic(APIError{
+			panic(JSendError{
 				Code:    http.StatusBadRequest,
 				Message: "We could not validate your request.",
-				Meta:    err,
+				Data:    err,
 			})
 		}
 		return
 	case err != nil:
-		panic(APIError{
+		panic(JSendError{
 			Code:    http.StatusBadRequest,
 			Message: "We cannot parse your request body.",
 			Err:     err,
@@ -68,10 +68,10 @@ func ReadJSON(r *http.Request, v interface{}) {
 		// validate parsed JSON data
 		err = ozzo.Validate(v)
 		if err != nil {
-			panic(APIError{
+			panic(JSendError{
 				Code:    http.StatusBadRequest,
 				Message: "We could not validate your request.",
-				Meta:    err,
+				Data:    err,
 			})
 		}
 	}
@@ -87,7 +87,7 @@ func IDParam(r *http.Request, name string) uint {
 
 	raw, err := strconv.ParseUint(param, 10, 32)
 	if err != nil {
-		panic(APIError{
+		panic(JSendError{
 			Code:    http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be an ID", name),
 		})

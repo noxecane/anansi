@@ -36,7 +36,7 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 	scheme, token := getAuthorization(r)
 
 	if scheme != s.scheme && scheme != "bearer" {
-		panic(APIError{
+		panic(JSendError{
 			Code:    http.StatusUnauthorized,
 			Message: ErrUnsupportedScheme.Error(),
 			Err:     ErrUnsupportedScheme,
@@ -44,7 +44,7 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 	}
 
 	if token == "" {
-		panic(APIError{
+		panic(JSendError{
 			Code:    http.StatusUnauthorized,
 			Message: ErrEmptyToken.Error(),
 			Err:     ErrEmptyToken,
@@ -58,7 +58,7 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 	}
 
 	if err != nil {
-		panic(APIError{
+		panic(JSendError{
 			Code:    http.StatusUnauthorized,
 			Message: err.Error(),
 			Err:     err,
@@ -72,7 +72,7 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			scheme, token := getAuthorization(r)
 			if scheme != s.scheme {
-				panic(APIError{
+				panic(JSendError{
 					Code:    http.StatusUnauthorized,
 					Message: ErrUnsupportedScheme.Error(),
 					Err:     ErrUnsupportedScheme,
@@ -80,7 +80,7 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 			}
 
 			if token == "" {
-				panic(APIError{
+				panic(JSendError{
 					Code:    http.StatusUnauthorized,
 					Message: ErrEmptyToken.Error(),
 					Err:     ErrEmptyToken,
@@ -89,7 +89,7 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 
 			// read and discard session data
 			if err := jwt.DecodeEmbedded(s.secret, []byte(token), &struct{}{}); err != nil {
-				panic(APIError{
+				panic(JSendError{
 					Code:    http.StatusUnauthorized,
 					Message: err.Error(),
 					Err:     err,
@@ -105,7 +105,7 @@ func getAuthorization(r *http.Request) (scheme, token string) {
 	authHeader := r.Header.Get("Authorization")
 
 	if authHeader == "" {
-		panic(APIError{
+		panic(JSendError{
 			Code:    http.StatusUnauthorized,
 			Message: ErrHeaderNotSet.Error(),
 			Err:     ErrHeaderNotSet,
@@ -115,7 +115,7 @@ func getAuthorization(r *http.Request) (scheme, token string) {
 	splitAuth := strings.Split(strings.TrimSpace(authHeader), " ")
 
 	if len(splitAuth) != 2 {
-		panic(APIError{
+		panic(JSendError{
 			Code:    http.StatusUnauthorized,
 			Message: ErrAuthorisationFormat.Error(),
 			Err:     ErrAuthorisationFormat,

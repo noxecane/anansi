@@ -28,7 +28,7 @@ func Recoverer(env string) func(http.Handler) http.Handler {
 						fmt.Fprintf(os.Stderr, "Panic: %+v\n", rvr)
 					}
 
-					if e, ok := rvr.(siber.APIError); ok {
+					if e, ok := rvr.(siber.JSendError); ok {
 						siber.SendError(r, w, e)
 					} else {
 						if env == "dev" || env == "test" {
