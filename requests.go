@@ -52,7 +52,7 @@ func ReadJSON(r *http.Request, v interface{}) {
 		err := ozzo.Validate(v)
 		if err != nil {
 			panic(JSendError{
-				Code:    http.StatusBadRequest,
+				Code:    http.StatusUnprocessableEntity,
 				Message: "We could not validate your request.",
 				Data:    err,
 			})
@@ -69,7 +69,7 @@ func ReadJSON(r *http.Request, v interface{}) {
 		err = ozzo.Validate(v)
 		if err != nil {
 			panic(JSendError{
-				Code:    http.StatusBadRequest,
+				Code:    http.StatusUnprocessableEntity,
 				Message: "We could not validate your request.",
 				Data:    err,
 			})
