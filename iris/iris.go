@@ -2,13 +2,16 @@ package iris
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
+	"github.com/random-guys/go-siber"
 	"github.com/random-guys/go-siber/jwt"
 )
 
@@ -61,6 +64,10 @@ type Client struct {
 	scheme           string
 	headlessDuration time.Duration
 	token            string
+}
+
+type jSendSuccess struct {
+	Data map[string]interface{} `json:"data"`
 }
 
 // Bearer creates IrisOptions that will replicate the session of the
@@ -139,4 +146,42 @@ func (c *Client) NewRequestWithContext(ctx context.Context, r *http.Request, met
 	req.Header.Set("Authorization", fmt.Sprintf("%s %s", c.scheme, c.token))
 
 	return req, nil
+}
+
+func GetErr(res *http.Response) error {
+	if res.StatusCode < 400 {
+		return nil
+	}
+
+	var err siber.JSendError
+	if err := json.NewDecoder(res.Body).Decode(&err); err != nil {
+		return err
+	}
+	return err
+}
+
+func GetResponse(res *http.Response, v interface{}) error {
+	var j jSendSuccess
+	err := json.NewDecoder(res.Body).Decode(&j)
+	if err != nil {
+		return errors.Wrap(err, "error decoding into jSend")
+	}
+
+	config := &mapstructure.DecoderConfig{
+		WeaklyTypedInput: true,
+		Result:           &v,
+		TagName:          "json",
+	}
+
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return errors.Wrap(err, "error creating decoder")
+	}
+
+	err = decoder.Decode(j.Data)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
