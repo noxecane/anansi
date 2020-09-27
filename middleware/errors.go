@@ -10,10 +10,9 @@ import (
 	"github.com/tsaron/anansi"
 )
 
-type Catch func(w http.ResponseWriter, r *http.Request, v interface{}) bool
-
-// RecovererWithHandler creates a middleware that handles panics from chi controllers. It
-// automatically handles APIController errors passing the right error code.
+// Recoverer creates a middleware that handles panics from chi controllers. It handles
+// printing(optionally stack trace in dev env) and responding to the client for all
+// errors except APIErrors. Note that all errors(bar APIError) respond with a 500
 func Recoverer(env string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {

@@ -35,11 +35,10 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 
 	scheme, token := getAuthorization(r)
 
-	if scheme != s.scheme && scheme != "bearer" {
+	if scheme != s.scheme && scheme != "Bearer" {
 		panic(APIError{
 			Code:    http.StatusUnauthorized,
 			Message: ErrUnsupportedScheme.Error(),
-			Err:     ErrUnsupportedScheme,
 		})
 	}
 
@@ -47,11 +46,10 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 		panic(APIError{
 			Code:    http.StatusUnauthorized,
 			Message: ErrEmptyToken.Error(),
-			Err:     ErrEmptyToken,
 		})
 	}
 
-	if scheme == "bearer" {
+	if scheme == "Bearer" {
 		err = s.store.Extend(token, s.timeout, session)
 	} else {
 		err = jwt.DecodeEmbedded(s.secret, []byte(token), session)
@@ -60,7 +58,7 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 	if err != nil {
 		panic(APIError{
 			Code:    http.StatusUnauthorized,
-			Message: err.Error(),
+			Message: "Your token is invalid",
 			Err:     err,
 		})
 	}
@@ -75,7 +73,6 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 				panic(APIError{
 					Code:    http.StatusUnauthorized,
 					Message: ErrUnsupportedScheme.Error(),
-					Err:     ErrUnsupportedScheme,
 				})
 			}
 
@@ -83,7 +80,6 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 				panic(APIError{
 					Code:    http.StatusUnauthorized,
 					Message: ErrEmptyToken.Error(),
-					Err:     ErrEmptyToken,
 				})
 			}
 
@@ -91,7 +87,7 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 			if err := jwt.DecodeEmbedded(s.secret, []byte(token), &struct{}{}); err != nil {
 				panic(APIError{
 					Code:    http.StatusUnauthorized,
-					Message: err.Error(),
+					Message: "Your token is invalid",
 					Err:     err,
 				})
 			}
@@ -108,7 +104,6 @@ func getAuthorization(r *http.Request) (scheme, token string) {
 		panic(APIError{
 			Code:    http.StatusUnauthorized,
 			Message: ErrHeaderNotSet.Error(),
-			Err:     ErrHeaderNotSet,
 		})
 	}
 
@@ -118,9 +113,8 @@ func getAuthorization(r *http.Request) (scheme, token string) {
 		panic(APIError{
 			Code:    http.StatusUnauthorized,
 			Message: ErrAuthorisationFormat.Error(),
-			Err:     ErrAuthorisationFormat,
 		})
 	}
 
-	return strings.ToLower(splitAuth[0]), splitAuth[1]
+	return strings.TrimSpace(splitAuth[0]), splitAuth[1]
 }

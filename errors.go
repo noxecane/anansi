@@ -11,6 +11,12 @@ type APIError struct {
 }
 
 // implements the error interface
-func (e APIError) Error() string { return fmt.Sprintf("%s: %v", e.Message, e.Err) }
+func (e APIError) Error() string {
+	if e.Err == nil {
+		return e.Message
+	}
+
+	return fmt.Sprintf("%s: %v", e.Message, e.Err)
+}
 
 func (e APIError) Unwrap() error { return e.Err }
