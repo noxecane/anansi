@@ -8,8 +8,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type Catch func(w http.ResponseWriter, r *http.Request, v interface{}) bool
-
 // Recoverer creates a middleware that handles panics from chi controllers. It handles
 // printing(optionally stack trace in dev env) and responding to the client for all
 // errors except JSendErrors. Note that all errors(bar JSendError) respond with a 500

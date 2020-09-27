@@ -11,6 +11,12 @@ type JSendError struct {
 }
 
 // implements the error interface
-func (e JSendError) Error() string { return fmt.Sprintf("%s: %v", e.Message, e.Err) }
+func (e JSendError) Error() string {
+	if e.Err == nil {
+		return e.Message
+	}
+
+	return fmt.Sprintf("%s: %v", e.Message, e.Err)
+}
 
 func (e JSendError) Unwrap() error { return e.Err }
