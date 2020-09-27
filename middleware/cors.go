@@ -3,17 +3,16 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/go-chi/chi"
 	"github.com/rs/cors"
 )
 
 // CORS sets CORS for the handler based on the app environment, making the
 // rules lax in dev environment.
-func CORS(router *chi.Mux, appEnv string, origins ...string) {
+func CORS(appEnv string, origins ...string) func(http.Handler) http.Handler {
 	if appEnv == "dev" {
-		router.Use(devCORS().Handler)
+		return devCORS().Handler
 	} else {
-		router.Use(secureCORS(origins).Handler)
+		return secureCORS(origins).Handler
 	}
 }
 
