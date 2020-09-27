@@ -11,8 +11,8 @@ import (
 // - RedirectSlashes
 // - Compress(with compression level of 5)
 func DefaultMiddleware(router *chi.Mux) {
+	router.Use(middleware.Compress(5))
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
 	router.Use(middleware.RedirectSlashes)
-	router.Use(middleware.Compress(5))
 }
