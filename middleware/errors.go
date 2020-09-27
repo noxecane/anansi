@@ -1,9 +1,7 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 	"runtime/debug"
 
 	"github.com/random-guys/go-siber"
@@ -12,25 +10,22 @@ import (
 
 type Catch func(w http.ResponseWriter, r *http.Request, v interface{}) bool
 
-// RecovererWithHandler creates a middleware that handles panics from chi controllers. It
-// automatically handles APIController errors passing the right error code.
+// Recoverer creates a middleware that handles panics from chi controllers. It handles
+// printing(optionally stack trace in dev env) and responding to the client for all
+// errors except JSendErrors. Note that all errors(bar JSendError) respond with a 500
 func Recoverer(env string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if rvr := recover(); rvr != nil && rvr != http.ErrAbortHandler {
-
-					log := zerolog.Ctx(r.Context())
-					if log != nil {
-						err := rvr.(error) // kill yourself
-						log.Err(err).Msg("")
-					} else {
-						fmt.Fprintf(os.Stderr, "Panic: %+v\n", rvr)
-					}
-
 					if e, ok := rvr.(siber.JSendError); ok {
 						siber.SendError(r, w, e)
 					} else {
+						// log errors before printing stack trace
+						log := zerolog.Ctx(r.Context())
+						err := rvr.(error) // kill yourself
+						log.Err(err).Msg("")
+
 						if env == "dev" || env == "test" {
 							debug.PrintStack()
 						}

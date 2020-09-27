@@ -45,7 +45,7 @@ func TrackRequest() func(http.Handler) http.Handler {
 					Str("method", r.Method).
 					Str("remote_address", r.RemoteAddr).
 					Str("url", r.URL.String()).
-					Interface("headers", formattedHeaders)
+					Interface("request_headers", formattedHeaders)
 			})
 
 			requestBody := siber.ReadBody(r)
@@ -81,7 +81,7 @@ func TrackResponse() func(http.Handler) http.Handler {
 						Int("status", ww.Status()).
 						Int("length", ww.BytesWritten()).
 						Float64("elapsed", float64(time.Since(t1).Milliseconds())).
-						Interface("headers", formatHeaders(ww.Header()))
+						Interface("response_headers", formatHeaders(ww.Header()))
 				})
 			}()
 
