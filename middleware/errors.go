@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"runtime/debug"
 
@@ -19,15 +20,23 @@ func Recoverer(env string) func(http.Handler) http.Handler {
 					if e, ok := rvr.(siber.JSendError); ok {
 						siber.SendError(r, w, e)
 					} else {
-						// log errors before printing stack trace
-						log := zerolog.Ctx(r.Context())
-						err := rvr.(error) // kill yourself
+						ctx := r.Context()
+
+						// always log errors regardless of the type
+						log := zerolog.Ctx(ctx)
+						err := rvr.(error) // it would be serious if this wasn't an error
 						log.Err(err).Msg("")
 
-						if env == "dev" || env == "test" {
-							debug.PrintStack()
+						// make sure request hasn't timed out
+						if ctx.Err() == context.DeadlineExceeded {
+							http.Error(w, http.StatusText(http.StatusGatewayTimeout), http.StatusGatewayTimeout)
+						} else {
+							// give dev a chance to trace unknown errors
+							if env == "dev" || env == "test" {
+								debug.PrintStack()
+							}
+							http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 						}
-						http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					}
 				}
 			}()
