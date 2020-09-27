@@ -1,9 +1,7 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 	"runtime/debug"
 
 	"github.com/rs/zerolog"
@@ -18,18 +16,14 @@ func Recoverer(env string) func(http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if rvr := recover(); rvr != nil && rvr != http.ErrAbortHandler {
-
-					log := zerolog.Ctx(r.Context())
-					if log != nil {
-						err := rvr.(error) // kill yourself
-						log.Err(err).Msg("")
-					} else {
-						fmt.Fprintf(os.Stderr, "Panic: %+v\n", rvr)
-					}
-
 					if e, ok := rvr.(anansi.APIError); ok {
 						anansi.SendError(r, w, e)
 					} else {
+						// log errors before printing stack trace
+						log := zerolog.Ctx(r.Context())
+						err := rvr.(error) // kill yourself
+						log.Err(err).Msg("")
+
 						if env == "dev" || env == "test" {
 							debug.PrintStack()
 						}
