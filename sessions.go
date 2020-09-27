@@ -52,7 +52,7 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 	if scheme == "Bearer" {
 		err = s.store.Extend(token, s.timeout, session)
 	} else {
-		err = jwt.DecodeEmbedded(s.secret, []byte(token), session)
+		err = jwt.DecodeStruct(s.secret, []byte(token), session)
 	}
 
 	if err != nil {
@@ -84,7 +84,7 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 			}
 
 			// read and discard session data
-			if err := jwt.DecodeEmbedded(s.secret, []byte(token), &struct{}{}); err != nil {
+			if err := jwt.DecodeStruct(s.secret, []byte(token), &struct{}{}); err != nil {
 				panic(APIError{
 					Code:    http.StatusUnauthorized,
 					Message: "Your token is invalid",
