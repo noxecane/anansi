@@ -8,7 +8,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-// LoadEnv loads environment variables into Env
+// LoadEnv loads environment variables into env
 func LoadEnv(env interface{}) error {
 	// try to load from .env first
 	err := godotenv.Load()

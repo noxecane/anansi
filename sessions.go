@@ -50,7 +50,7 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 	}
 
 	if scheme == "Bearer" {
-		err = s.store.Extend(token, s.timeout, session)
+		err = s.store.Extend(r.Context(), token, s.timeout, session)
 	} else {
 		err = jwt.DecodeStruct(s.secret, []byte(token), session)
 	}
