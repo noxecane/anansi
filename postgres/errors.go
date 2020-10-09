@@ -5,9 +5,9 @@ import (
 )
 
 var (
-	ErrCodeIntegrity  = regexp.MustCompile("^ERROR #23000")
-	ErrCodeRestrict   = regexp.MustCompile("^ERROR #23001")
-	ErrCodeNotNull    = regexp.MustCompile("^ERROR #23502")
-	ErrCodeForeignKey = regexp.MustCompile("^ERROR #23503")
-	ErrCodeDuplicate  = regexp.MustCompile("^ERROR #23505")
+	ErrIntegrity  = regexp.MustCompile("^ERROR #23000")
+	ErrRestrict   = regexp.MustCompile("^ERROR #23001")
+	ErrNotNull    = regexp.MustCompile("^ERROR #23502")
+	ErrForeignKey = regexp.MustCompile("^ERROR #23503")
+	ErrDuplicate  = regexp.MustCompile("^ERROR #23505")
 )
