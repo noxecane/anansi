@@ -144,7 +144,7 @@ func ParseQuery(query map[string]string, v interface{}) error {
 			out = rawValue
 		case reflect.Struct:
 			// attempt to parse a date value
-			if out, err = FromISO(rawValue); err != nil {
+			if out, err = ParseISO(rawValue); err != nil {
 				return errors.Errorf("this function doesn't support %s for the field '%s'", fieldType, field.Name)
 			}
 		default:
