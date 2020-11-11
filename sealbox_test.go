@@ -32,7 +32,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	})
 
 	t.Run("Decrypt for normal strings", func(t *testing.T) {
-		someString := faker.Lorem().Characters(16)
+		someString := faker.Lorem().Characters(64)
 
 		_, err := Decrypt(secret, someString)
 		if err == nil {

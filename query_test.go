@@ -12,9 +12,9 @@ import (
 
 func TestParseQuery(t *testing.T) {
 	type mapStruct struct {
-		Name      string     `key:"name"`
-		Age       int32      `key:"age" default:"30"`
-		Limit     *int       `key:"limit"`
+		Name      string
+		Limit     *int
+		Age       int32      `default:"30"`
 		CreatedAt *time.Time `key:"date"`
 	}
 

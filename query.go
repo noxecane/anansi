@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -16,6 +17,7 @@ import (
 // - float(all bit sizes)
 // - string
 // - ISO8601 time
+// It defaults the keys to the lowercase struct field names.
 func ParseQuery(query map[string]string, v interface{}) error {
 	result := reflect.ValueOf(v).Elem()
 	resultType := result.Type()
@@ -34,7 +36,7 @@ func ParseQuery(query map[string]string, v interface{}) error {
 		// get query parameter name
 		key := field.Tag.Get("key")
 		if key == "" {
-			key = field.Name
+			key = strings.ToLower(field.Name)
 		}
 
 		// for fields with default values
@@ -144,7 +146,7 @@ func ParseQuery(query map[string]string, v interface{}) error {
 			out = rawValue
 		case reflect.Struct:
 			// attempt to parse a date value
-			if out, err = FromISO(rawValue); err != nil {
+			if out, err = ParseISO(rawValue); err != nil {
 				return errors.Errorf("this function doesn't support %s for the field '%s'", fieldType, field.Name)
 			}
 		default:

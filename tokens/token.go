@@ -1,6 +1,7 @@
 package tokens
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -8,7 +9,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/go-redis/redis/v8"
 )
 
 var (
@@ -25,7 +26,7 @@ func NewStore(r *redis.Client, secret []byte) *Store {
 }
 
 // Commission creates a single use token that expires after the given timeout.
-func (ts *Store) Commission(t time.Duration, key string, data interface{}) (string, error) {
+func (ts *Store) Commission(ctx context.Context, t time.Duration, key string, data interface{}) (string, error) {
 	var encoded []byte
 	var err error
 	var token string
@@ -42,7 +43,7 @@ func (ts *Store) Commission(t time.Duration, key string, data interface{}) (stri
 		return "", err
 	}
 
-	if _, err = ts.redis.Set(token, encoded, t).Result(); err != nil {
+	if _, err = ts.redis.Set(ctx, token, encoded, t).Result(); err != nil {
 		return "", err
 	}
 
@@ -50,22 +51,22 @@ func (ts *Store) Commission(t time.Duration, key string, data interface{}) (stri
 }
 
 // Peek gets the data the token references without changing its lifetime.
-func (ts *Store) Peek(token string, data interface{}) error {
-	return ts.peekToken(token, data)
+func (ts *Store) Peek(ctx context.Context, token string, data interface{}) error {
+	return ts.peekToken(ctx, token, data)
 }
 
 // Extend sets the new duration before an existing token times out. Note that it doesn't
 // take into account how long the old token had to expire, as it uses the new duration
 // entirely.
-func (ts *Store) Extend(token string, timeout time.Duration, data interface{}) error {
+func (ts *Store) Extend(ctx context.Context, token string, timeout time.Duration, data interface{}) error {
 	var ok bool
 	var err error
 
-	if err := ts.peekToken(token, data); err != nil {
+	if err := ts.peekToken(ctx, token, data); err != nil {
 		return err
 	}
 
-	if ok, err = ts.redis.Expire(token, timeout).Result(); err != nil {
+	if ok, err = ts.redis.Expire(ctx, token, timeout).Result(); err != nil {
 		return err
 	}
 
@@ -77,7 +78,7 @@ func (ts *Store) Extend(token string, timeout time.Duration, data interface{}) e
 }
 
 // Reset changes the contents of the token without changing it's TTL
-func (ts *Store) Reset(key string, data interface{}) error {
+func (ts *Store) Reset(ctx context.Context, key string, data interface{}) error {
 	var err error
 	var encoded []byte
 	var token string
@@ -90,7 +91,7 @@ func (ts *Store) Reset(key string, data interface{}) error {
 	token = hex.EncodeToString(sig.Sum(nil))
 
 	// make sure the token existed before.
-	if _, err = ts.redis.Get(token).Result(); err != nil {
+	if _, err = ts.redis.Get(ctx, token).Result(); err != nil {
 		if err == redis.Nil {
 			return ErrTokenNotFound
 		}
@@ -99,7 +100,7 @@ func (ts *Store) Reset(key string, data interface{}) error {
 	}
 
 	//	we already know the key exists
-	ttl, err := ts.redis.TTL(token).Result()
+	ttl, err := ts.redis.TTL(ctx, token).Result()
 	if err != nil {
 		return err
 	}
@@ -109,7 +110,7 @@ func (ts *Store) Reset(key string, data interface{}) error {
 		return err
 	}
 
-	if _, err = ts.redis.Set(token, encoded, ttl).Result(); err != nil {
+	if _, err = ts.redis.Set(ctx, token, encoded, ttl).Result(); err != nil {
 		return err
 	}
 	return nil
@@ -117,14 +118,14 @@ func (ts *Store) Reset(key string, data interface{}) error {
 
 // Decommission loads the value referenced by the token and dispenses of the token,
 // making it unvailable for further use.
-func (ts *Store) Decommission(token string, data interface{}) error {
+func (ts *Store) Decommission(ctx context.Context, token string, data interface{}) error {
 	var err error
 
-	if err = ts.peekToken(token, data); err != nil {
+	if err = ts.peekToken(ctx, token, data); err != nil {
 		return err
 	}
 
-	if _, err = ts.redis.Del(token).Result(); err != nil {
+	if _, err = ts.redis.Del(ctx, token).Result(); err != nil {
 		return err
 	}
 
@@ -132,7 +133,7 @@ func (ts *Store) Decommission(token string, data interface{}) error {
 }
 
 // Revoke renders the token generated for the given key useless.
-func (ts *Store) Revoke(key string) error {
+func (ts *Store) Revoke(ctx context.Context, key string) error {
 	var err error
 	var token string
 
@@ -144,7 +145,7 @@ func (ts *Store) Revoke(key string) error {
 	token = hex.EncodeToString(sig.Sum(nil))
 
 	var del int64
-	if del, err = ts.redis.Del(token).Result(); err != nil {
+	if del, err = ts.redis.Del(ctx, token).Result(); err != nil {
 		return err
 	}
 
@@ -156,11 +157,11 @@ func (ts *Store) Revoke(key string) error {
 	return nil
 }
 
-func (ts *Store) peekToken(tokenKey string, data interface{}) error {
+func (ts *Store) peekToken(ctx context.Context, tokenKey string, data interface{}) error {
 	var encoded string
 	var err error
 
-	if encoded, err = ts.redis.Get(tokenKey).Result(); err != nil {
+	if encoded, err = ts.redis.Get(ctx, tokenKey).Result(); err != nil {
 		if err == redis.Nil {
 			return ErrTokenNotFound
 		}
