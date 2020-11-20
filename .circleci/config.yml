@@ -4,6 +4,7 @@ jobs:
     working_directory: ~/app
     docker:
       - image: circleci/golang:1.14
+      - image: redis
     environment:
       GOOS: linux
       GOARCH: amd64
