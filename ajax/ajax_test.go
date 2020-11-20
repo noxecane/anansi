@@ -89,7 +89,7 @@ func TestHeadlessToken(t *testing.T) {
 	tokenStr := strings.TrimSpace(auth[1])
 
 	var loadedSession sessionInfo
-	if err := jwt.DecodeEmbedded(secret, []byte(tokenStr), &loadedSession); err != nil {
+	if err := jwt.DecodeStruct(secret, []byte(tokenStr), &loadedSession); err != nil {
 		t.Fatal(err)
 	}
 

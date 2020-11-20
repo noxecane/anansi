@@ -73,7 +73,7 @@ func (c *Client) BearerToken(r *http.Request) (Token, error) {
 
 // HeadlessToken creates a token to be used with the client's scheme
 func (c *Client) HeadlessToken(v interface{}) (Token, error) {
-	token, err := jwt.EncodeEmbedded(c.serviceSecret, c.headlessDuration, v)
+	token, err := jwt.EncodeStruct(c.serviceSecret, c.headlessDuration, v)
 	if err != nil {
 		return Token{}, err
 	}
