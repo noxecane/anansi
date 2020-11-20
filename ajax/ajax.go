@@ -83,15 +83,12 @@ func (c *Client) HeadlessToken(v interface{}) (Token, error) {
 
 // NewRequest is a wrapper around http.NNewRequest that adds the required
 // headers for distributed tracing. The requests will only last as long as the parent
-// request(it uses the request's context)
+// request(it uses the request's context). The request is assigned a random request ID if
+// none is found on the request
 func (c *Client) NewRequest(r *http.Request, method, url string, token Token, body io.Reader) (*http.Request, error) {
 	reqId := r.Header.Get("X-Request-Id")
 	if reqId == "" {
 		return nil, errors.New("request ID not set on base request")
-	}
-
-	if token.value == "" {
-		return nil, errors.New("authentication token is not set")
 	}
 
 	req, err := http.NewRequestWithContext(r.Context(), method, url, body)
@@ -113,17 +110,11 @@ func (c *Client) NewRequest(r *http.Request, method, url string, token Token, bo
 	return req, nil
 }
 
-// NewRequestWitchContext is the same as NewRequest, only the user can now control
-// how long before the request times out.
-func (c *Client) NewRequestWithContext(ctx context.Context, r *http.Request, method, url string, token Token, body io.Reader) (*http.Request, error) {
-	reqId := r.Header.Get("X-Request-Id")
-	if reqId == "" {
-		return nil, errors.New("request ID not set on base request")
-	}
-
-	if token.value == "" {
-		return nil, errors.New("authentication token is not set")
-	}
+// NewBaseRequest is the same as NewRequest, only the user can now control
+// how long before the request times out and it's assigned a random request ID.
+// This is best for when a request is being made without a base request.
+func (c *Client) NewBaseRequest(ctx context.Context, method, url string, token Token, body io.Reader) (*http.Request, error) {
+	reqId := NextRequestID()
 
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
