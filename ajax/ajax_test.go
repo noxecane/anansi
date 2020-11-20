@@ -14,7 +14,7 @@ import (
 	"syreclabs.com/go/faker"
 )
 
-type jSMock struct {
+type mockStruct struct {
 	Name    string   `json:"name"`
 	Company string   `json:"company"`
 	Emails  []string `json:"emails"`
@@ -100,27 +100,22 @@ func TestHeadlessToken(t *testing.T) {
 
 func TestGetResponse(t *testing.T) {
 	name := faker.Name().FirstName()
+	b, err := json.Marshal(map[string]string{"name": name})
+	if err != nil {
+		panic(err)
+	}
 
-	t.Run("It should decode response", func(t *testing.T) {
-		b, err := json.Marshal(map[string]interface{}{
-			"data": map[string]interface{}{"name": name},
-		})
-		if err != nil {
-			panic(err)
-		}
+	res := http.Response{
+		Body: ioutil.NopCloser(bytes.NewBuffer(b)),
+	}
 
-		res := http.Response{
-			Body: ioutil.NopCloser(bytes.NewBuffer(b)),
-		}
+	var data mockStruct
+	err = GetResponse(&res, &data)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "error getting response"))
+	}
 
-		var data jSMock
-		err = GetResponse(&res, &data)
-		if err != nil {
-			t.Fatal(errors.Wrap(err, "error getting response"))
-		}
-
-		if data.Name != name {
-			t.Fatalf("expected %s got %s", name, data.Name)
-		}
-	})
+	if data.Name != name {
+		t.Fatalf("expected %s got %s", name, data.Name)
+	}
 }
