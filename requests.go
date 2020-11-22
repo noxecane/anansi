@@ -61,6 +61,15 @@ func ReadJSON(r *http.Request, v interface{}) {
 	}
 
 	err := json.NewDecoder(r.Body).Decode(v)
+
+	if err := generalMold.Struct(r.Context(), v); err != nil {
+		panic(APIError{
+			Code:    http.StatusBadRequest,
+			Message: "We cannot parse your request body.",
+			Err:     err,
+		})
+	}
+
 	switch {
 	case err == io.EOF:
 		// tell the user all the required attributes
