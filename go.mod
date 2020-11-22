@@ -7,6 +7,7 @@ require (
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/go-pg/pg/v10 v10.6.2
+	github.com/go-playground/mold/v3 v3.1.0
 	github.com/go-redis/redis/v8 v8.3.4
 	github.com/golang-migrate/migrate/v4 v4.13.0
 	github.com/joho/godotenv v1.3.0
