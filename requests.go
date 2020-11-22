@@ -13,7 +13,22 @@ import (
 
 	"github.com/go-chi/chi"
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-playground/mold/v3"
+	"github.com/go-playground/mold/v3/modifiers"
 )
+
+var generalMold = modifiers.New()
+
+func init() {
+	// setup modifier aliases
+	generalMold.RegisterAlias("lowercase", "lcase")
+	generalMold.RegisterAlias("uppercase", "ucase")
+	generalMold.RegisterAlias("smalltext", "lcase,trim")
+}
+
+func AddModifier(tag string, fn mold.Func) {
+	generalMold.Register(tag, fn)
+}
 
 // ReadBody extracts the bytes in a request body without destroying the contents of the body
 func ReadBody(r *http.Request) []byte {
