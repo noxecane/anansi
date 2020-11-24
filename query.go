@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/pkg/errors"
 )
 
@@ -180,6 +181,15 @@ func ReadQuery(r *http.Request, v interface{}) {
 			Code:    http.StatusBadRequest,
 			Message: "We could not parse your request query.",
 			Err:     err,
+		})
+	}
+
+	// validate parsed JSON data
+	if err := ozzo.Validate(v); err != nil {
+		panic(JSendError{
+			Code:    http.StatusUnprocessableEntity,
+			Message: "We could not validate your request.",
+			Data:    err,
 		})
 	}
 }

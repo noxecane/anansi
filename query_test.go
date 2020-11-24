@@ -80,7 +80,7 @@ func TestReadQuery(t *testing.T) {
 	type myQuery struct {
 		Account string     `key:"nuban"`
 		Start   *time.Time `key:"from"`
-		End     *time.Time `key:"to"`
+		End     time.Time
 	}
 
 	req, err := http.NewRequest("GET", "https://sample.com", nil)
@@ -88,7 +88,7 @@ func TestReadQuery(t *testing.T) {
 		t.Fatal(err)
 	}
 	nuban := faker.Number().Number(10)
-	req.URL.RawQuery = fmt.Sprintf("nuban=%s", nuban)
+	req.URL.RawQuery = fmt.Sprintf("nuban=%s&end=%s", nuban, time.Now().Format("2006-01-02"))
 
 	var sample myQuery
 	ReadQuery(req, &sample)
@@ -97,7 +97,11 @@ func TestReadQuery(t *testing.T) {
 		t.Errorf("Expected nuban to be %s, got %s", nuban, sample.Account)
 	}
 
-	if sample.Start != nil || sample.End != nil {
-		t.Error("Expected from and to nil")
+	if sample.Start != nil {
+		t.Error("Expected from to be nil")
+	}
+
+	if sample.End.IsZero() {
+		t.Error("Expected end to be set")
 	}
 }
