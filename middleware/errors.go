@@ -16,6 +16,11 @@ func Recoverer(env string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
+				// abort early if request timed out
+				if r.Context().Err() == context.DeadlineExceeded {
+					http.Error(w, http.StatusText(http.StatusGatewayTimeout), http.StatusGatewayTimeout)
+				}
+
 				if rvr := recover(); rvr != nil && rvr != http.ErrAbortHandler {
 					if e, ok := rvr.(siber.JSendError); ok {
 						siber.SendError(r, w, e)
@@ -27,16 +32,12 @@ func Recoverer(env string) func(http.Handler) http.Handler {
 						err := rvr.(error) // it would be serious if this wasn't an error
 						log.Err(err).Msg("")
 
-						// make sure request hasn't timed out
-						if ctx.Err() == context.DeadlineExceeded {
-							http.Error(w, http.StatusText(http.StatusGatewayTimeout), http.StatusGatewayTimeout)
-						} else {
-							// give dev a chance to trace unknown errors
-							if env == "dev" || env == "test" {
-								debug.PrintStack()
-							}
-							http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+						// give dev a chance to trace unknown errors
+						if env == "dev" || env == "test" {
+							debug.PrintStack()
 						}
+						http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+
 					}
 				}
 			}()
