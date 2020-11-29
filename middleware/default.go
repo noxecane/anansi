@@ -53,7 +53,6 @@ func DefaultMiddleware(router *chi.Mux, log zerolog.Logger, conf MiddlwareConfig
 	router.Use(TrackRequest())
 
 	// start tracking the request time
-	router.Use(TrackResponse())
 	router.Use(Timeout(conf.Timeout))
 	router.Use(Recoverer(conf.Environment))
 }

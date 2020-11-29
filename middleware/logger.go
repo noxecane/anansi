@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"strings"
-	"time"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/random-guys/go-siber"
@@ -38,7 +36,7 @@ func TrackRequest() func(http.Handler) http.Handler {
 				})
 			}
 
-			formattedHeaders := formatHeaders(r.Header)
+			formattedHeaders := siber.NormaliseHeader(r.Header)
 
 			log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
 				return ctx.
@@ -65,44 +63,4 @@ func TrackRequest() func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func TrackResponse() func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log := zerolog.Ctx(r.Context())
-
-			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
-
-			t1 := time.Now()
-			defer func() {
-				log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
-					return ctx.
-						Int("status", ww.Status()).
-						Int("length", ww.BytesWritten()).
-						Float64("elapsed", float64(time.Since(t1).Milliseconds())).
-						Interface("response_headers", formatHeaders(ww.Header()))
-				})
-			}()
-
-			next.ServeHTTP(ww, r)
-		})
-	}
-}
-
-func formatHeaders(headers http.Header) map[string]interface{} {
-	lowerCaseHeaders := make(map[string]interface{})
-
-	for k, v := range headers {
-		lowerKey := strings.ToLower(k)
-		if len(v) == 0 {
-			lowerCaseHeaders[lowerKey] = ""
-		} else if len(v) == 1 {
-			lowerCaseHeaders[lowerKey] = v[0]
-		} else {
-			lowerCaseHeaders[lowerKey] = v
-		}
-	}
-
-	return lowerCaseHeaders
 }

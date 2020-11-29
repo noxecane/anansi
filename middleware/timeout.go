@@ -8,8 +8,7 @@ import (
 
 // Timeout is a middleware that cancels ctx after a given timeout and return
 // a 504 Gateway Timeout error to the client.
-// P.S this was copied directly from go-chi, we only removed the header writing
-// part
+// P.S this was copied directly from go-chi, only removed writing to the response.
 //
 // It's required that you select the ctx.Done() channel to check for the signal
 // if the context has reached its deadline and return, otherwise the timeout

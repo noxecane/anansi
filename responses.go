@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/rs/zerolog"
 )
@@ -29,7 +30,11 @@ func SendSuccess(r *http.Request, w http.ResponseWriter, v interface{}) {
 	log := zerolog.Ctx(r.Context())
 	raw := getJSON(log, jsendSuccess{http.StatusOK, v})
 
-	log.Info().Msg("")
+	log.Info().
+		Int("status", http.StatusOK).
+		Int("length", len(raw)).
+		Interface("response_headers", NormaliseHeader(w.Header())).
+		Msg("")
 
 	Send(w, http.StatusOK, raw)
 }
@@ -39,7 +44,11 @@ func SendError(r *http.Request, w http.ResponseWriter, err JSendError) {
 	log := zerolog.Ctx(r.Context())
 	raw := getJSON(log, err)
 
-	log.Err(err).Msg("")
+	log.Err(err).
+		Int("status", err.Code).
+		Int("length", len(raw)).
+		Interface("response_headers", NormaliseHeader(w.Header())).
+		Msg("")
 
 	Send(w, err.Code, raw)
 }
@@ -61,4 +70,23 @@ func getJSON(log *zerolog.Logger, v interface{}) []byte {
 	}
 
 	return raw
+}
+
+// NormaliseHeader extracts the headers into a map and converts all single value
+// headers to the value directly rather than a slice of single value string
+func NormaliseHeader(headers http.Header) map[string]interface{} {
+	lowerCaseHeaders := make(map[string]interface{})
+
+	for k, v := range headers {
+		lowerKey := strings.ToLower(k)
+		if len(v) == 0 {
+			lowerCaseHeaders[lowerKey] = ""
+		} else if len(v) == 1 {
+			lowerCaseHeaders[lowerKey] = v[0]
+		} else {
+			lowerCaseHeaders[lowerKey] = v
+		}
+	}
+
+	return lowerCaseHeaders
 }
