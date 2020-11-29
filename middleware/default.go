@@ -46,6 +46,7 @@ func DefaultMiddleware(router *chi.Mux, log zerolog.Logger, conf MiddlwareConfig
 	}
 
 	router.Use(middleware.Compress(conf.CompressionLevel))
+	router.Use(ResponseTime)
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
 	router.Use(middleware.RedirectSlashes)
