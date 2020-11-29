@@ -19,15 +19,16 @@ type MiddlwareConfig struct {
 // those that defer computation(especially)
 //
 // Middleware set up include:
-// - RequestID
-// - RealIP
-// - RedirectSlashes
-// - Compress
-// - CORS
-// - Request/Response Logging
+// - Automatic request IDs
+// - Response time middleware
+// - Real IP middleware
+// - Middleware for hanging slashes
+// - Compressing response body
+// - CORS handling for dev and production
+// - Request Logging
+// - Response time header
 // - Panic Recovery(with special support for APIError)
-// - Timeout
-// - Request logger
+// - Timeouts on request conctext
 func DefaultMiddleware(router *chi.Mux, log zerolog.Logger, conf MiddlwareConfig) {
 	if conf.CORSOrigins != nil && len(conf.CORSOrigins) > 0 {
 		if conf.Environment == "dev" {
@@ -52,8 +53,6 @@ func DefaultMiddleware(router *chi.Mux, log zerolog.Logger, conf MiddlwareConfig
 	router.Use(middleware.RedirectSlashes)
 	router.Use(AttachLogger(log))
 	router.Use(TrackRequest())
-
-	// start tracking the request time
 	router.Use(Timeout(conf.Timeout))
 	router.Use(Recoverer(conf.Environment))
 }

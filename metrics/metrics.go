@@ -8,32 +8,31 @@ import (
 	"github.com/random-guys/go-siber/middleware"
 )
 
-// RequestDurationHistogram is the histogram for tracking request durations based
-// on their status code, method or the specific path.
-var RequestDurationHistogram *prometheus.HistogramVec
-
-func init() {
-	RequestDurationHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+// RequestDuration adds a middleware to observe request durations and report to prometheus.
+// Note that this handler only works if the response time middleware is used. Also ensure
+// it's used before any middleware that might send response(whether directly or during defer)
+func RequestDuration(reg prometheus.Registerer) func(http.Handler) http.Handler {
+	hist := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "http",
 		Name:      "request_duration_seconds",
 		Help:      "Duration of HTTP requests in seconds",
 		Buckets:   prometheus.DefBuckets,
 	}, []string{"statusCode", "method", "path"})
-}
 
-// RequestDuration adds a middleware to observe request durations and report to prometheus.
-// It basically observes values using RequestDurationHistogram. Note that this handler only
-// works if the response time middleware is used. Also make sure to add the RequestDurationHistogram
-// to a registry
-func RequestDuration() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			tw, ok := w.(middleware.TimedResponseWriter)
-			if ok {
-				RequestDurationHistogram.
-					WithLabelValues(strconv.Itoa(tw.Code()), r.Method, r.URL.String()).
-					Observe(float64(tw.Duration().Milliseconds()))
-			}
-		}()
-	})
+	reg.MustRegister(hist)
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next.ServeHTTP(w, r)
+
+			defer func() {
+				tw, ok := w.(middleware.TimedResponseWriter)
+				if ok {
+					hist.
+						WithLabelValues(strconv.Itoa(tw.Code()), r.Method, r.URL.String()).
+						Observe(float64(tw.Duration().Milliseconds()))
+				}
+			}()
+		})
+	}
 }
