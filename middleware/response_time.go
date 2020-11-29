@@ -16,22 +16,30 @@ const ResponseTimeHeader = "X-Response-Time"
 
 // ResponseTime adds a "X-Response-Time" header once the handler
 // writes the header of the response.
-func ResponeTime(next http.Handler) http.Handler {
+func ResponseTime(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ww := newWriter(w, r.ProtoMajor)
 		next.ServeHTTP(ww, r)
 	})
 }
 
-//
+// TimedResponseWriter is a wrapper around the http.ResponseWriter allowing
+// users to track the processing time of an handler.
+type TimedResponseWriter interface {
+	http.ResponseWriter
+	Code() int
+	Duration() time.Duration
+}
 
 type timedWriter struct {
 	http.ResponseWriter
 	start       time.Time
+	code        int
+	duration    time.Duration
 	wroteHeader bool
 }
 
-func newWriter(w http.ResponseWriter, protoMajor int) http.ResponseWriter {
+func newWriter(w http.ResponseWriter, protoMajor int) TimedResponseWriter {
 	_, fl := w.(http.Flusher)
 
 	tw := timedWriter{ResponseWriter: w, start: time.Now()}
@@ -58,9 +66,11 @@ func newWriter(w http.ResponseWriter, protoMajor int) http.ResponseWriter {
 func (t *timedWriter) WriteHeader(code int) {
 	if !t.wroteHeader {
 		t.wroteHeader = true
+		t.duration = time.Since(t.start)
+		t.code = code
 
 		// write the response time header
-		dur := int(time.Since(t.start).Milliseconds())
+		dur := int(t.duration.Milliseconds())
 		t.Header().Add(ResponseTimeHeader, strconv.Itoa(dur))
 
 		t.ResponseWriter.WriteHeader(code)
@@ -72,6 +82,14 @@ func (t *timedWriter) Write(buf []byte) (int, error) {
 		t.WriteHeader(http.StatusOK)
 	}
 	return t.ResponseWriter.Write(buf)
+}
+
+func (t *timedWriter) Duration() time.Duration {
+	return t.duration
+}
+
+func (t *timedWriter) Code() int {
+	return t.code
 }
 
 type flushWriter struct {

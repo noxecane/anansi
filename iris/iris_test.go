@@ -2,6 +2,7 @@ package iris
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/random-guys/go-siber/jwt"
-	"github.com/segmentio/encoding/json"
 	"syreclabs.com/go/faker"
 )
 
