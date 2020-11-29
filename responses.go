@@ -30,13 +30,13 @@ func SendSuccess(r *http.Request, w http.ResponseWriter, v interface{}) {
 	log := zerolog.Ctx(r.Context())
 	raw := getJSON(log, jsendSuccess{http.StatusOK, v})
 
+	Send(w, http.StatusOK, raw)
+
 	log.Info().
 		Int("status", http.StatusOK).
 		Int("length", len(raw)).
 		Interface("response_headers", NormaliseHeader(w.Header())).
 		Msg("")
-
-	Send(w, http.StatusOK, raw)
 }
 
 // SendError sends a JSON error message
@@ -44,13 +44,13 @@ func SendError(r *http.Request, w http.ResponseWriter, err JSendError) {
 	log := zerolog.Ctx(r.Context())
 	raw := getJSON(log, err)
 
+	Send(w, err.Code, raw)
+
 	log.Err(err).
 		Int("status", err.Code).
 		Int("length", len(raw)).
 		Interface("response_headers", NormaliseHeader(w.Header())).
 		Msg("")
-
-	Send(w, err.Code, raw)
 }
 
 func getJSON(log *zerolog.Logger, v interface{}) []byte {
