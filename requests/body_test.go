@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -133,14 +132,7 @@ func TestIDParam(t *testing.T) {
 		rw.Write([]byte(fmt.Sprintf("%d", id)))
 	})
 
-	router.Get("/entities", func(rw http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if err := recover(); err != nil {
-				rw.WriteHeader(500)
-				rw.Write([]byte(""))
-			}
-		}()
-
+	router.Get("/entities", func(_ http.ResponseWriter, r *http.Request) {
 		// this should panic
 		_, _ = IDParam(r, "user_id")
 	})
@@ -150,21 +142,16 @@ func TestIDParam(t *testing.T) {
 
 	t.Run("returns a valid ID", func(t *testing.T) {
 		id := faker.RandomInt(1, 30)
-		resp, err := testRequest(ts, "GET", fmt.Sprintf("/entities/%d", id), nil)
-		if err != nil {
-			t.Fatal(err)
+
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", fmt.Sprintf("/entities/%d", id), nil)
+		router.ServeHTTP(res, req)
+
+		if res.Code != 200 {
+			t.Fatalf("Expected response code to be 200, got %d", res.Code)
 		}
 
-		if resp.StatusCode != 200 {
-			t.Fatalf("Expected response code to be 200, got %d", resp.StatusCode)
-		}
-
-		raw, err := testResp(resp)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		rid, err := strconv.Atoi(string(raw))
+		rid, err := strconv.Atoi(res.Body.String())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -176,53 +163,42 @@ func TestIDParam(t *testing.T) {
 
 	t.Run("returns a 400 when param is negative", func(t *testing.T) {
 		id := faker.RandomInt(-10, -1)
-		resp, err := testRequest(ts, "GET", fmt.Sprintf("/entities/%d", id), nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer resp.Body.Close()
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", fmt.Sprintf("/entities/%d", id), nil)
+		router.ServeHTTP(res, req)
 
-		if resp.StatusCode != 400 {
-			t.Fatalf("Expected response code to be 400, got %d", resp.StatusCode)
+		if res.Code != 400 {
+			t.Fatalf("Expected response code to be 400, got %d", res.Code)
 		}
 	})
 
 	t.Run("returns a 400 when not an integer", func(t *testing.T) {
-		resp, err := testRequest(ts, "GET", "/entities/some-id", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer resp.Body.Close()
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/entities/some-invalid-id", nil)
+		router.ServeHTTP(res, req)
 
-		if resp.StatusCode != 400 {
-			t.Fatalf("Expected response code to be 400, got %d", resp.StatusCode)
+		if res.Code != 400 {
+			t.Fatalf("Expected response code to be 400, got %d", res.Code)
 		}
 	})
 
 	t.Run("panics when param is not defined on route", func(t *testing.T) {
-		resp, err := testRequest(ts, "GET", "/entities", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Error("Expected handler to panic")
+			}
+		}()
 
-		if resp.StatusCode != 500 {
-			t.Fatalf("Expected response code to be 400, got %d", resp.StatusCode)
-		}
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/entities", nil)
+		router.ServeHTTP(res, req)
 	})
 }
 
 func TestStringParam(t *testing.T) {
 	router := chi.NewRouter()
 
-	router.Get("/entities", func(rw http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if err := recover(); err != nil {
-				rw.WriteHeader(500)
-				rw.Write([]byte(""))
-			}
-		}()
-
+	router.Get("/entities", func(_ http.ResponseWriter, r *http.Request) {
 		// this should panic
 		_, _ = IDParam(r, "user_id")
 	})
@@ -231,34 +207,14 @@ func TestStringParam(t *testing.T) {
 	defer ts.Close()
 
 	t.Run("panics when param is not defined on route", func(t *testing.T) {
-		resp, err := testRequest(ts, "GET", "/entities", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Error("Expected handler to panic")
+			}
+		}()
 
-		if resp.StatusCode != 500 {
-			t.Fatalf("Expected response code to be 400, got %d", resp.StatusCode)
-		}
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/entities", nil)
+		router.ServeHTTP(res, req)
 	})
-}
-
-func testRequest(ts *httptest.Server, method, path string, body io.Reader) (*http.Response, error) {
-	req, err := http.NewRequest(method, ts.URL+path, body)
-	if err != nil {
-		return nil, err
-	}
-
-	return http.DefaultClient.Do(req)
-}
-
-func testResp(resp *http.Response) ([]byte, error) {
-	respBody, err := ioutil.ReadAll(resp.Body)
-	// only close if no errors occured
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return respBody, nil
 }
