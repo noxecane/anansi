@@ -95,13 +95,13 @@ func TestReadJSON(t *testing.T) {
 			t.Error("Expected read JSON to fail with error")
 		}
 
-		var e ErrValidation
+		var e ozzo.Errors
 		if !errors.As(err, &e) {
 			t.Errorf(`Expected ReadJSON to fail with ErrValidation, got %T`, err)
 		}
 	})
 
-	t.Run("fails with validation error", func(t *testing.T) {
+	t.Run("fails with decoding error", func(t *testing.T) {
 		data := `some-string`
 		req := httptest.NewRequest("POST", "http://www.example.com", strings.NewReader(data))
 		req.Header.Add("Content-type", "application/json; charset=utf-8")
@@ -112,9 +112,9 @@ func TestReadJSON(t *testing.T) {
 			t.Error("Expected read JSON to fail with error")
 		}
 
-		var e ErrDecode
-		if !errors.As(err, &e) {
-			t.Errorf(`Expected ReadJSON to fail with ErrDecode, got %T`, err)
+		var e ozzo.Errors
+		if err == ErrNotJSON || errors.As(err, &e) {
+			t.Errorf(`Expected ReadJSON to fail with decode error, got "%v"`, err)
 		}
 	})
 }

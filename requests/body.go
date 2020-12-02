@@ -17,30 +17,6 @@ import (
 
 var ErrNotJSON = errors.New("body is not JSON")
 
-type ErrDecode struct {
-	Err error
-}
-
-func (e ErrDecode) Error() string {
-	return "json decoding error: " + e.Error()
-}
-
-func (e ErrDecode) Unwrap() error {
-	return e.Err
-}
-
-type ErrValidation struct {
-	Err error
-}
-
-func (e ErrValidation) Error() string {
-	return "validation error: " + e.Error()
-}
-
-func (e ErrValidation) Unwrap() error {
-	return e.Err
-}
-
 // ReadBody extracts the bytes in a request body without destroying the contents of the body.
 // Returns an error if reading body fails.
 func ReadBody(r *http.Request) ([]byte, error) {
@@ -60,9 +36,9 @@ func ReadBody(r *http.Request) ([]byte, error) {
 }
 
 // ReadJSON decodes the JSON body of the request and destroys it to prevent possible issues with
-// writing a response. Returns ErrNotJSON if the content-type of the request is not JSON, otherwise
-// it returns either ErrDecode for JSON decoding errors or ErrValidation if the resultant value
-// fails validation defined using ozzo.
+// writing a response. Returns ErrNotJSON if the content-type of the request is not JSON, else
+// it returns validation.Errors if the resultant value fails validation defined using ozzo.
+// Otherwise the it returns an error when json decoding fails
 func ReadJSON(r *http.Request, v interface{}) error {
 	// make sure we are reading a JSON type
 	contentType := r.Header.Get("Content-Type")
@@ -76,16 +52,16 @@ func ReadJSON(r *http.Request, v interface{}) error {
 		// tell the user all the required attributes
 		err := ozzo.Validate(v)
 		if err != nil {
-			return ErrValidation{err}
+			return err
 		}
 		return err
 	case err != nil:
-		return ErrDecode{err}
+		return err
 	default:
 		// validate parsed JSON data
 		err = ozzo.Validate(v)
 		if err != nil {
-			return ErrValidation{err}
+			return err
 		}
 	}
 
