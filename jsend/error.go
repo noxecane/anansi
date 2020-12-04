@@ -1,17 +1,16 @@
-package siber
+package jsend
 
 import "fmt"
 
-// JSendError is a struct describing an error
-type JSendError struct {
+// Error defines the structure of an error response that follows the JSend protocol
+type Error struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
 	Err     error       `json:"-"`
 }
 
-// implements the error interface
-func (e JSendError) Error() string {
+func (e Error) Error() string {
 	if e.Err == nil {
 		return e.Message
 	}
@@ -19,4 +18,4 @@ func (e JSendError) Error() string {
 	return fmt.Sprintf("%s: %v", e.Message, e.Err)
 }
 
-func (e JSendError) Unwrap() error { return e.Err }
+func (e Error) Unwrap() error { return e.Err }
