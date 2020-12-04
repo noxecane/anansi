@@ -2,7 +2,6 @@ package requests
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi"
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/random-guys/go-siber/json"
 )
 
 var ErrNotJSON = errors.New("body is not JSON")

@@ -11,7 +11,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
-	"github.com/random-guys/go-siber"
+	"github.com/random-guys/go-siber/jsend"
 	"github.com/random-guys/go-siber/jwt"
 )
 

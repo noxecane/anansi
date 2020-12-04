@@ -2,13 +2,13 @@ package jsend
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/go-chi/chi"
+	"github.com/random-guys/go-siber/json"
 	"github.com/random-guys/go-siber/requests"
 	"github.com/rs/zerolog"
 	"syreclabs.com/go/faker"

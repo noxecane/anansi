@@ -137,9 +137,6 @@ func TestIDParam(t *testing.T) {
 		_, _ = IDParam(r, "user_id")
 	})
 
-	ts := httptest.NewServer(router)
-	defer ts.Close()
-
 	t.Run("returns a valid ID", func(t *testing.T) {
 		id := faker.RandomInt(1, 30)
 
