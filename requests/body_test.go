@@ -40,7 +40,7 @@ func TestReadBody(t *testing.T) {
 	}
 
 	// make sure we can still read the body
-	b2, err := ioutil.ReadAll(req.Body)
+	b2, _ := ioutil.ReadAll(req.Body)
 	if !bytes.Equal(b, b2) {
 		t.Errorf("Expected body to remain unchanged, got %s", string(b2))
 	}
@@ -129,7 +129,7 @@ func TestIDParam(t *testing.T) {
 		}
 
 		rw.WriteHeader(200)
-		rw.Write([]byte(fmt.Sprintf("%d", id)))
+		_, _ = rw.Write([]byte(fmt.Sprintf("%d", id)))
 	})
 
 	router.Get("/entities", func(_ http.ResponseWriter, r *http.Request) {

@@ -15,7 +15,6 @@ require (
 	github.com/prometheus/client_golang v1.8.0
 	github.com/rs/cors v1.7.0
 	github.com/rs/zerolog v1.20.0
-	github.com/satori/go.uuid v1.2.0
 	golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201128035030-22ab2dfb190c // indirect
