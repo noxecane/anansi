@@ -1,4 +1,4 @@
-package middleware
+package responses
 
 // The original work was derived from go-chi's middleware, source:
 // https://github.com/go-chi/chi/tree/master/middleware/wrap_writer.go
@@ -12,16 +12,9 @@ import (
 	"time"
 )
 
-const ResponseTimeHeader = "X-Response-Time"
-
-// ResponseTime adds a "X-Response-Time" header once the handler
-// writes the header of the response.
-func ResponseTime(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ww := newWriter(w, r.ProtoMajor)
-		next.ServeHTTP(ww, r)
-	})
-}
+// ResponseTimeHeader is the header name of response time. Change it if you
+// use something different
+var ResponseTimeHeader = "X-Response-Time"
 
 // TimedResponseWriter is a wrapper around the http.ResponseWriter allowing
 // users to track the processing time of an handler.
@@ -71,7 +64,7 @@ func (t *timedWriter) WriteHeader(code int) {
 
 		// write the response time header
 		dur := int(t.duration.Milliseconds())
-		t.Header().Add(ResponseTimeHeader, strconv.Itoa(dur))
+		t.Header().Add(ResponseTimeHeader, strconv.Itoa(dur)+"ms")
 
 		t.ResponseWriter.WriteHeader(code)
 	}
@@ -138,3 +131,11 @@ func (h2 *http2Writer) Flush() {
 	fl := h2.timedWriter.ResponseWriter.(http.Flusher)
 	fl.Flush()
 }
+
+// static tests
+var _ http.Flusher = &httpWriter{}
+var _ http.Flusher = &http2Writer{}
+
+var _ http.Pusher = &http2Writer{}
+var _ http.Hijacker = &httpWriter{}
+var _ io.ReaderFrom = &httpWriter{}
