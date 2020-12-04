@@ -95,7 +95,7 @@ func TestErr(t *testing.T) {
 	internalErr := "cannot process request"
 
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		Err(r, w, Error{
+		Error(r, w, Err{
 			Code:    http.StatusUnprocessableEntity,
 			Message: errMessage,
 			Data:    metadata{name},
@@ -106,7 +106,7 @@ func TestErr(t *testing.T) {
 	router.
 		With(requests.AttachLogger(zerolog.New(logOut).With().Logger())).
 		Get("/logged", func(w http.ResponseWriter, r *http.Request) {
-			Err(r, w, Error{
+			Error(r, w, Err{
 				Code:    http.StatusUnprocessableEntity,
 				Message: errMessage,
 				Data:    metadata{name},
@@ -119,7 +119,7 @@ func TestErr(t *testing.T) {
 		req := httptest.NewRequest("GET", "/", nil)
 		router.ServeHTTP(res, req)
 
-		resp := Error{}
+		resp := Err{}
 		err := json.Unmarshal(res.Body.Bytes(), &resp)
 		if err != nil {
 			t.Fatal(err)

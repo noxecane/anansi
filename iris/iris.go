@@ -154,7 +154,7 @@ func GetErr(res *http.Response) error {
 		return nil
 	}
 
-	var err siber.JSendError
+	var err jsend.Err
 	if err := json.NewDecoder(res.Body).Decode(&err); err != nil {
 		return err
 	}
