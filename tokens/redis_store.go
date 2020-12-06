@@ -5,11 +5,11 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/random-guys/go-siber/json"
 )
 
 var (
@@ -55,7 +55,6 @@ func (ts *store) Commission(ctx context.Context, t time.Duration, key string, v 
 	}
 	token = hex.EncodeToString(sig.Sum(nil))
 
-	// TODO: replace this something lighter and faster
 	if encoded, err = json.Marshal(v); err != nil {
 		return "", err
 	}
