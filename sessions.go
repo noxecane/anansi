@@ -70,40 +70,6 @@ func (s *SessionStore) Load(r *http.Request, v interface{}) error {
 	return err
 }
 
-// Secure loads a user session into the request context
-func (s *SessionStore) Headless() func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			scheme, token, _ := getAuthorization(r)
-
-			if scheme != s.scheme {
-				panic(jsend.Err{
-					Code:    http.StatusUnauthorized,
-					Message: ErrUnsupportedScheme.Error(),
-				})
-			}
-
-			if token == "" {
-				panic(jsend.Err{
-					Code:    http.StatusUnauthorized,
-					Message: ErrEmptyToken.Error(),
-				})
-			}
-
-			// read and discard session data
-			if err := jwt.DecodeEmbedded(s.secret, []byte(token), &struct{}{}); err != nil {
-				panic(jsend.Err{
-					Code:    http.StatusUnauthorized,
-					Message: "Your token is invalid",
-					Err:     err,
-				})
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 func getAuthorization(r *http.Request) (string, string, error) {
 	authHeader := r.Header.Get("Authorization")
 
