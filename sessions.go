@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/random-guys/go-siber/jsend"
 	"github.com/random-guys/go-siber/jwt"
 	"github.com/random-guys/go-siber/tokens"
 )
@@ -36,14 +37,14 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 	scheme, token := getAuthorization(r)
 
 	if scheme != s.scheme && scheme != "Bearer" {
-		panic(JSendError{
+		panic(jsend.Err{
 			Code:    http.StatusUnauthorized,
 			Message: ErrUnsupportedScheme.Error(),
 		})
 	}
 
 	if token == "" {
-		panic(JSendError{
+		panic(jsend.Err{
 			Code:    http.StatusUnauthorized,
 			Message: ErrEmptyToken.Error(),
 		})
@@ -56,7 +57,7 @@ func (s *SessionStore) Load(r *http.Request, session interface{}) {
 	}
 
 	if err != nil {
-		panic(JSendError{
+		panic(jsend.Err{
 			Code:    http.StatusUnauthorized,
 			Message: "Your token is invalid",
 			Err:     err,
@@ -70,14 +71,14 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			scheme, token := getAuthorization(r)
 			if scheme != s.scheme {
-				panic(JSendError{
+				panic(jsend.Err{
 					Code:    http.StatusUnauthorized,
 					Message: ErrUnsupportedScheme.Error(),
 				})
 			}
 
 			if token == "" {
-				panic(JSendError{
+				panic(jsend.Err{
 					Code:    http.StatusUnauthorized,
 					Message: ErrEmptyToken.Error(),
 				})
@@ -85,7 +86,7 @@ func (s *SessionStore) Headless() func(http.Handler) http.Handler {
 
 			// read and discard session data
 			if err := jwt.DecodeEmbedded(s.secret, []byte(token), &struct{}{}); err != nil {
-				panic(JSendError{
+				panic(jsend.Err{
 					Code:    http.StatusUnauthorized,
 					Message: "Your token is invalid",
 					Err:     err,
@@ -101,7 +102,7 @@ func getAuthorization(r *http.Request) (scheme, token string) {
 	authHeader := r.Header.Get("Authorization")
 
 	if authHeader == "" {
-		panic(JSendError{
+		panic(jsend.Err{
 			Code:    http.StatusUnauthorized,
 			Message: ErrHeaderNotSet.Error(),
 		})
@@ -110,7 +111,7 @@ func getAuthorization(r *http.Request) (scheme, token string) {
 	splitAuth := strings.Split(strings.TrimSpace(authHeader), " ")
 
 	if len(splitAuth) != 2 {
-		panic(JSendError{
+		panic(jsend.Err{
 			Code:    http.StatusUnauthorized,
 			Message: ErrAuthorisationFormat.Error(),
 		})
