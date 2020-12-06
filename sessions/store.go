@@ -22,13 +22,13 @@ var (
 )
 
 type Store struct {
-	store   *tokens.Store
+	store   tokens.Store
 	timeout time.Duration
 	secret  []byte
 	scheme  string
 }
 
-func NewStore(secret []byte, scheme string, timeout time.Duration, store *tokens.Store) *Store {
+func NewStore(secret []byte, scheme string, timeout time.Duration, store tokens.Store) *Store {
 	return &Store{store, timeout, secret, strings.ToLower(scheme)}
 }
 
