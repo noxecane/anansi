@@ -126,7 +126,7 @@ func TestErr(t *testing.T) {
 		}
 
 		if resp.Code != http.StatusUnprocessableEntity {
-			t.Errorf("Expected the status code to be %d, got %d", http.StatusOK, resp.Code)
+			t.Errorf("Expected the status code to be %d, got %d", http.StatusUnprocessableEntity, resp.Code)
 		}
 
 		if resp.Message != errMessage {

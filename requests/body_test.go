@@ -62,7 +62,7 @@ func TestReadJSON(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(n.Name) == 0 {
+		if n.Name == "" {
 			t.Error(`Expected Name to be set from request body`)
 		}
 	})
