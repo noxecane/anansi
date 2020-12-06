@@ -26,7 +26,7 @@ type SessionStore struct {
 }
 
 func NewSessionStore(secret []byte, scheme string, timeout time.Duration, store *tokens.Store) *SessionStore {
-	return &SessionStore{store, timeout, secret, scheme}
+	return &SessionStore{store, timeout, secret, strings.ToLower(scheme)}
 }
 
 // Load retrieves a user's session object based on the session key from the Authorization
@@ -117,5 +117,8 @@ func getAuthorization(r *http.Request) (scheme, token string) {
 		})
 	}
 
-	return strings.TrimSpace(splitAuth[0]), splitAuth[1]
+	scheme = strings.TrimSpace(strings.ToLower(splitAuth[0]))
+	token = splitAuth[1]
+
+	return
 }
