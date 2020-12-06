@@ -1,4 +1,4 @@
-package siber
+package sessions
 
 import (
 	"errors"
@@ -21,19 +21,19 @@ var (
 	ErrUnsupportedScheme = errors.New("unsupported authorization scheme")
 )
 
-type SessionStore struct {
+type Store struct {
 	store   *tokens.Store
 	timeout time.Duration
 	secret  []byte
 	scheme  string
 }
 
-func NewSessionStore(secret []byte, scheme string, timeout time.Duration, store *tokens.Store) *SessionStore {
-	return &SessionStore{store, timeout, secret, strings.ToLower(scheme)}
+func NewStore(secret []byte, scheme string, timeout time.Duration, store *tokens.Store) *Store {
+	return &Store{store, timeout, secret, strings.ToLower(scheme)}
 }
 
 // LoadBearer loads a stateful session using the session from key the authorization header.
-func (s *SessionStore) LoadBearer(r *http.Request, v interface{}) error {
+func (s *Store) LoadBearer(r *http.Request, v interface{}) error {
 	scheme, token, err := getAuthorization(r)
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (s *SessionStore) LoadBearer(r *http.Request, v interface{}) error {
 }
 
 // LoadHeadless loads a stateless session from the encoded token in the authorization header.
-func (s *SessionStore) LoadHeadless(r *http.Request, v interface{}) error {
+func (s *Store) LoadHeadless(r *http.Request, v interface{}) error {
 	scheme, token, err := getAuthorization(r)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (s *SessionStore) LoadHeadless(r *http.Request, v interface{}) error {
 }
 
 // Load trys both LoadBearer and LoadHeadless.
-func (s *SessionStore) Load(r *http.Request, v interface{}) error {
+func (s *Store) Load(r *http.Request, v interface{}) error {
 	err := s.LoadBearer(r, v)
 	if err == ErrUnsupportedScheme {
 		return s.LoadHeadless(r, v)
