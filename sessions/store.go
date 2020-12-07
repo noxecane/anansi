@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/random-guys/go-siber/jsend"
 	"github.com/random-guys/go-siber/jwt"
 	"github.com/random-guys/go-siber/tokens"
 )
@@ -74,10 +73,7 @@ func getAuthorization(r *http.Request) (string, string, error) {
 	authHeader := r.Header.Get("Authorization")
 
 	if authHeader == "" {
-		panic(jsend.Err{
-			Code:    http.StatusUnauthorized,
-			Message: ErrEmptyHeader.Error(),
-		})
+		return "", "", ErrEmptyHeader
 	}
 
 	splitAuth := strings.Fields(authHeader)
