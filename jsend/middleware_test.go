@@ -99,3 +99,25 @@ func TestRecoverer(t *testing.T) {
 		}
 	})
 }
+
+func TestHeadless(t *testing.T) {
+	router := chi.NewRouter()
+	router.Use(Recoverer("production"))
+	router.With(Headless(store)).Get("/", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("."))
+	})
+
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/", nil)
+	router.ServeHTTP(res, req)
+
+	resp := Err{}
+	err := json.Unmarshal(res.Body.Bytes(), &resp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp.Code != http.StatusUnauthorized {
+		t.Errorf("Expected the status code to be %d, got %d", http.StatusUnauthorized, resp.Code)
+	}
+}
