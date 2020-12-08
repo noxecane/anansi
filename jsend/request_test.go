@@ -93,21 +93,7 @@ func TestReadJSON(t *testing.T) {
 	})
 
 	t.Run("panics with 415 with wrong content type", func(t *testing.T) {
-		defer func() {
-			err := recover()
-			if err == nil {
-				t.Fatal("Expected ReadJSON to panic")
-			}
-
-			e, ok := err.(Err)
-			if !ok {
-				t.Fatal("Expected ReadJSON to panic with Err type")
-			}
-
-			if e.Code != http.StatusUnsupportedMediaType {
-				t.Errorf("Expected the status code to be %d, got %d", http.StatusUnsupportedMediaType, e.Code)
-			}
-		}()
+		defer checkErr(t, http.StatusUnsupportedMediaType, false, false, "")
 
 		data := `{ "extra": [1,2,3]}`
 		req := httptest.NewRequest("POST", "http://www.example.com", strings.NewReader(data))
@@ -118,30 +104,8 @@ func TestReadJSON(t *testing.T) {
 	})
 
 	t.Run("fails with validation error", func(t *testing.T) {
-		defer func() {
-			err := recover()
-			if err == nil {
-				t.Fatal("Expected ReadJSON to panic")
-			}
-
-			e, ok := err.(Err)
-			if !ok {
-				t.Fatal("Expected ReadJSON to panic with Err type")
-			}
-
-			if e.Code != http.StatusUnprocessableEntity {
-				t.Errorf("Expected the status code to be %d, got %d", http.StatusUnprocessableEntity, e.Code)
-			}
-
-			if e.Data == nil {
-				t.Errorf("Expected metadata for the error to be set")
-			}
-
-			errMsg := "We could not validate your request."
-			if e.Message != errMsg {
-				t.Errorf("Expected error message to be %s, got %s", errMsg, e.Message)
-			}
-		}()
+		message := "We could not validate your request."
+		defer checkErr(t, http.StatusUnprocessableEntity, false, true, message)
 
 		data := `{ "extra": [1,2,3]}`
 		req := httptest.NewRequest("POST", "http://www.example.com", strings.NewReader(data))
@@ -152,30 +116,8 @@ func TestReadJSON(t *testing.T) {
 	})
 
 	t.Run("fails with decoding error", func(t *testing.T) {
-		defer func() {
-			err := recover()
-			if err == nil {
-				t.Fatal("Expected ReadJSON to panic")
-			}
-
-			e, ok := err.(Err)
-			if !ok {
-				t.Fatal("Expected ReadJSON to panic with Err type")
-			}
-
-			if e.Code != http.StatusBadRequest {
-				t.Errorf("Expected the status code to be %d, got %d", http.StatusBadRequest, e.Code)
-			}
-
-			if e.Err == nil {
-				t.Errorf("Expected source of the error to be set")
-			}
-
-			errMsg := "We cannot parse your request body."
-			if e.Message != errMsg {
-				t.Errorf("Expected error message to be %s, got %s", errMsg, e.Message)
-			}
-		}()
+		message := "We cannot parse your request body."
+		defer checkErr(t, http.StatusBadRequest, true, false, message)
 
 		data := `some-string`
 		req := httptest.NewRequest("POST", "http://www.example.com", strings.NewReader(data))
