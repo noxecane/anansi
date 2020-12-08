@@ -14,6 +14,9 @@ import (
 // ozzo validation and 400 due to any other error(JSON decode error for instance)
 func ReadJSON(r *http.Request, v interface{}) {
 	err := requests.ReadJSON(r, v)
+	if err == nil {
+		return
+	}
 
 	var e validation.Errors
 	switch {
@@ -29,7 +32,7 @@ func ReadJSON(r *http.Request, v interface{}) {
 			Message: "We could not validate your request.",
 			Data:    e,
 		})
-	case err != nil:
+	default:
 		panic(Err{
 			Code:    http.StatusBadRequest,
 			Message: "We cannot parse your request body.",

@@ -31,6 +31,11 @@ func NewStore(secret []byte, scheme string, timeout time.Duration, store tokens.
 	return &Store{store, timeout, secret, strings.ToLower(scheme)}
 }
 
+// Save stores the session using the given key and creates a token for accesing it.
+func (s *Store) Save(r *http.Request, k string, v interface{}) (string, error) {
+	return s.store.Commission(r.Context(), s.timeout, k, v)
+}
+
 // LoadBearer loads a stateful session using the session from key the authorization header.
 func (s *Store) LoadBearer(r *http.Request, v interface{}) error {
 	scheme, token, err := getAuthorization(r)
