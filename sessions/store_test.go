@@ -52,15 +52,11 @@ func TestMain(m *testing.M) {
 }
 
 func Test_getAuthorization(t *testing.T) {
-	type void struct{}
-
-	store := NewStore(secret, scheme, time.Minute, sharedTestStore)
-
 	t.Run("fails when header format is incorrect", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/entities", nil)
 		req.Header.Set("Authorization", "Bearer ")
 
-		err := store.LoadBearer(req, &void{})
+		_, _, err := getAuthorization(req)
 		if err == nil {
 			t.Error("Expected LoadBearer to fail with error")
 		}
@@ -73,7 +69,7 @@ func Test_getAuthorization(t *testing.T) {
 	t.Run("fails when header is not set", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/entities", nil)
 
-		err := store.LoadBearer(req, &void{})
+		_, _, err := getAuthorization(req)
 		if err == nil {
 			t.Error("Expected LoadBearer to fail with error")
 		}
