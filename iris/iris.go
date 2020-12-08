@@ -15,6 +15,14 @@ import (
 	"github.com/random-guys/go-siber/jwt"
 )
 
+var (
+	// ErrNoRequestID is returned when the parent request doesn't have a request ID
+	ErrNoRequestID = errors.New("no request id")
+	// ErrNoAuthentication is returned when there's no authentication information
+	// attached to the parent request
+	ErrNoAuthentication = errors.New("no authentication")
+)
+
 type Config struct {
 	// Secret should be a 32 byte array for generating headless tokens.
 	Secret []byte
@@ -92,11 +100,11 @@ func (c *Client) HeadlessToken(v interface{}) (Token, error) {
 func (c *Client) NewRequest(r *http.Request, method, url string, token Token, body io.Reader) (*http.Request, error) {
 	reqId := r.Header.Get("X-Request-Id")
 	if reqId == "" {
-		return nil, errors.New("request ID not set on base request")
+		return nil, ErrNoRequestID
 	}
 
 	if token.value == "" {
-		return nil, errors.New("authentication token is not set")
+		return nil, ErrNoAuthentication
 	}
 
 	req, err := http.NewRequestWithContext(r.Context(), method, url, body)
