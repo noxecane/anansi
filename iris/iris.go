@@ -119,9 +119,34 @@ func (c *Client) NewRequest(r *http.Request, method, url string, body io.Reader)
 	return req, nil
 }
 
-// NewRequestWitchContext is the same as NewRequest, only the user can now control
-// how long before the request times out.
-func (c *Client) NewRequestWithContext(ctx context.Context, r *http.Request, method, url string, token Token, body io.Reader) (*http.Request, error) {
+// NewHeadlessRequest is like NewRequest but it replaces the request authentication mechanism with
+// an headless one, giving users control over what would pass for the session on the receiving server.
+func (c *Client) NewHeadlessRequest(r *http.Request, method, url string, session interface{}, body io.Reader) (*http.Request, error) {
+	reqId := r.Header.Get("X-Request-Id")
+	if reqId == "" {
+		return nil, ErrNoRequestID
+	}
+
+	token, err := jwt.EncodeEmbedded(c.serviceSecret, c.headlessDuration, session)
+	if err != nil {
+		return r, errors.Wrap(err, "could not create headless token")
+	}
+
+	req, err := http.NewRequestWithContext(r.Context(), method, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-Origin-Service", c.serviceName)
+	req.Header.Set("X-Request-Id", reqId)
+	req.Header.Set("Authorization", fmt.Sprintf("%s %s", c.headlessScheme, token))
+
+	return req, nil
+}
+
+// NewHeadlessRequest is like NewRequest but it replaces the request authentication mechanism with
+// an headless one, giving users control over what would pass for the session on the receiving server.
+func (c *Client) NewBaseRequest(ctx context.Context, r *http.Request, method, url string, token Token, body io.Reader) (*http.Request, error) {
 	reqId := r.Header.Get("X-Request-Id")
 	if reqId == "" {
 		return nil, errors.New("request ID not set on base request")
