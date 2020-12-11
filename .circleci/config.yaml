@@ -1,0 +1,38 @@
+version: 2.1
+jobs:
+  test:
+    working_directory: ~/app
+    docker:
+      - image: circleci/golang:1.14
+      - image: redis
+    environment:
+      GOOS: linux
+      GOARCH: amd64
+      GOFLAGS: -mod=vendor
+      CGO_ENABLED: 0
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mod-checksum-{{ checksum "go.sum" }}
+      - run:
+          name: Run tests
+          command: |
+            go mod tidy
+            go mod vendor
+            go build ./...
+            go test -v ./... | sed ''/PASS/s//$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$(printf "\033[31mFAIL\033[0m")/''
+      - save_cache:
+          key: go-mod-checksum-{{ checksum "go.sum" }}
+          paths:
+            - vendors
+workflows:
+  version: 2
+  test-deploy:
+    jobs:
+      - test:
+          context: library
+          filters:
+            branches:
+              ignore:
+                - master
