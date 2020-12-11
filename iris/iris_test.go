@@ -169,3 +169,76 @@ func TestNewHeadlessRequest(t *testing.T) {
 		}
 	})
 }
+
+func TestNewBaseRequest(t *testing.T) {
+	t.Run("sets the right headers", func(t *testing.T) {
+		type session struct{ User string }
+		client := NewClient(Config{
+			Secret:         []byte("secret"),
+			Service:        "user-service",
+			HeadlessScheme: "Test",
+		})
+
+		sput := session{uuid.New().String()}
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		req, err := client.NewBaseRequest(ctx, "GET", "/internal", sput, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if req.Header.Get("X-Request-ID") == "" {
+			t.Error("Expected request ID to be set")
+		}
+
+		if req.Header.Get("X-Origin-Service") != client.serviceName {
+			t.Errorf("Expected origin service of request to be %s, got %s", client.serviceName, req.Header.Get("X-Origin-Service"))
+		}
+
+		header := strings.Fields(req.Header.Get("Authorization"))
+		if header[0] != client.headlessScheme {
+			t.Errorf("Expected authorisation scheme to be %s, got %s", client.headlessScheme, header[0])
+		}
+
+		var sget session
+		if err := jwt.DecodeEmbedded(client.serviceSecret, []byte(header[1]), &sget); err != nil {
+			t.Fatal(err)
+		}
+		if sput.User != sget.User {
+			t.Errorf("Expected user ID in session to be %s, got %s", sput.User, sget.User)
+		}
+	})
+
+	t.Run("times out when parent request times out", func(t *testing.T) {
+		client := NewClient(Config{
+			Secret:         []byte("secret"),
+			Service:        faker.Company().Name(),
+			HeadlessScheme: "scheme",
+		})
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			time.Sleep(time.Millisecond * 400)
+			_, _ = w.Write([]byte("too late"))
+		}))
+		defer server.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
+		defer cancel()
+
+		req, err := client.NewBaseRequest(ctx, "GET", server.URL, struct{}{}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		httpClient := server.Client()
+		_, err = httpClient.Do(req)
+		if err == nil {
+			t.Fatal("Expected request to fail with error")
+		}
+
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("Expected request to fail because deadline was exceeded, got %v", err)
+		}
+	})
+}

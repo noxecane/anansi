@@ -129,7 +129,7 @@ func (c *Client) NewHeadlessRequest(r *http.Request, method, url string, session
 
 	token, err := jwt.EncodeEmbedded(c.serviceSecret, c.headlessDuration, session)
 	if err != nil {
-		return r, errors.Wrap(err, "could not create headless token")
+		return nil, errors.Wrap(err, "could not create headless token")
 	}
 
 	req, err := http.NewRequestWithContext(r.Context(), method, url, body)
@@ -146,14 +146,12 @@ func (c *Client) NewHeadlessRequest(r *http.Request, method, url string, session
 
 // NewHeadlessRequest is like NewRequest but it replaces the request authentication mechanism with
 // an headless one, giving users control over what would pass for the session on the receiving server.
-func (c *Client) NewBaseRequest(ctx context.Context, r *http.Request, method, url string, token Token, body io.Reader) (*http.Request, error) {
-	reqId := r.Header.Get("X-Request-Id")
-	if reqId == "" {
-		return nil, errors.New("request ID not set on base request")
-	}
+func (c *Client) NewBaseRequest(ctx context.Context, method, url string, session interface{}, body io.Reader) (*http.Request, error) {
+	reqId := NextRequestID()
 
-	if token.value == "" {
-		return nil, errors.New("authentication token is not set")
+	token, err := jwt.EncodeEmbedded(c.serviceSecret, c.headlessDuration, session)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create headless token")
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
@@ -161,16 +159,9 @@ func (c *Client) NewBaseRequest(ctx context.Context, r *http.Request, method, ur
 		return nil, err
 	}
 
-	var scheme string
-	if token.headless {
-		scheme = c.headlessScheme
-	} else {
-		scheme = "Bearer"
-	}
-
 	req.Header.Set("X-Origin-Service", c.serviceName)
 	req.Header.Set("X-Request-Id", reqId)
-	req.Header.Set("Authorization", fmt.Sprintf("%s %s", scheme, token.value))
+	req.Header.Set("Authorization", fmt.Sprintf("%s %s", c.headlessScheme, token))
 
 	return req, nil
 }
