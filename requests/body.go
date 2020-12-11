@@ -1,8 +1,7 @@
-package anansi
+package requests
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -15,9 +14,13 @@ import (
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-playground/mold/v3"
 	"github.com/go-playground/mold/v3/modifiers"
+	"github.com/tsaron/anansi/json"
 )
 
-var generalMold = modifiers.New()
+var (
+	generalMold = modifiers.New()
+	ErrNotJSON  = errors.New("body is not JSON")
+)
 
 func init() {
 	// setup modifier aliases
@@ -30,44 +33,39 @@ func AddModifier(tag string, fn mold.Func) {
 	generalMold.Register(tag, fn)
 }
 
-// ReadBody extracts the bytes in a request body without destroying the contents of the body
-func ReadBody(r *http.Request) []byte {
+// ReadBody extracts the bytes in a request body without destroying the contents of the body.
+// Returns an error if reading body fails.
+func ReadBody(r *http.Request) ([]byte, error) {
 	var buffer bytes.Buffer
 
 	// copy request body to in memory buffer while being read
 	readSplit := io.TeeReader(r.Body, &buffer)
 	body, err := ioutil.ReadAll(readSplit)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// return what you collected
 	r.Body = ioutil.NopCloser(&buffer)
 
-	return body
+	return body, nil
 }
 
-// ReadJSON decodes the JSON body of the request and destroys to prevent possible issues with
-// writing a response. If the content type is not JSON it fails with a 415. Otherwise it fails
-// with a 400 on validation errors.
-func ReadJSON(r *http.Request, v interface{}) {
+// ReadJSON decodes the JSON body of the request and destroys it to prevent possible issues with
+// writing a response. Returns ErrNotJSON if the content-type of the request is not JSON, else
+// it returns validation.Errors if the resultant value fails validation defined using ozzo.
+// Otherwise the it returns an error when json decoding fails
+func ReadJSON(r *http.Request, v interface{}) error {
 	// make sure we are reading a JSON type
 	contentType := r.Header.Get("Content-Type")
 	if !strings.Contains(contentType, "application/json") {
-		panic(APIError{
-			Code:    http.StatusUnsupportedMediaType,
-			Message: http.StatusText(http.StatusUnsupportedMediaType),
-		})
+		return ErrNotJSON
 	}
 
 	err := json.NewDecoder(r.Body).Decode(v)
 
 	if err := generalMold.Struct(r.Context(), v); err != nil {
-		panic(APIError{
-			Code:    http.StatusBadRequest,
-			Message: "We cannot parse your request body.",
-			Err:     err,
-		})
+		return err
 	}
 
 	switch {
@@ -75,34 +73,25 @@ func ReadJSON(r *http.Request, v interface{}) {
 		// tell the user all the required attributes
 		err := ozzo.Validate(v)
 		if err != nil {
-			panic(APIError{
-				Code:    http.StatusBadRequest,
-				Message: "We could not validate your request.",
-				Meta:    err,
-			})
+			return err
 		}
-		return
+		return err
 	case err != nil:
-		panic(APIError{
-			Code:    http.StatusBadRequest,
-			Message: "We cannot parse your request body.",
-			Err:     err,
-		})
+		return err
 	default:
 		// validate parsed JSON data
 		err = ozzo.Validate(v)
 		if err != nil {
-			panic(APIError{
-				Code:    http.StatusBadRequest,
-				Message: "We could not validate your request.",
-				Meta:    err,
-			})
+			return err
 		}
 	}
+
+	return nil
 }
 
-// IDParam extracts a uint URL parameter from the given request
-func IDParam(r *http.Request, name string) uint {
+// IDParam extracts a uint URL parameter from the given request. panics if there's no
+// such path on the route, otherwise it returns an error if the param is not an int.
+func IDParam(r *http.Request, name string) (uint, error) {
 	param := chi.URLParam(r, name)
 	if param == "" {
 		err := fmt.Sprintf("requested param %s is not part of route", name)
@@ -111,12 +100,11 @@ func IDParam(r *http.Request, name string) uint {
 
 	raw, err := strconv.ParseUint(param, 10, 32)
 	if err != nil {
-		panic(APIError{
-			Code:    http.StatusBadRequest,
-			Message: fmt.Sprintf("%s must be an ID", name),
-		})
+		err := fmt.Sprintf("%s must be an ID", name)
+		return 0, errors.New(err)
 	}
-	return uint(raw)
+
+	return uint(raw), nil
 }
 
 // StringParam basically just ensures the param name is correct. You might not

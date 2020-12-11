@@ -13,9 +13,9 @@ import (
 const expiredErr = jwt.ValidationErrorExpired | jwt.ValidationErrorNotValidYet
 
 var (
-	ErrJWTExpired   = errors.New("Your JWT token has expired")
-	ErrInvalidToken = errors.New("Your token is an invalid JWT token")
-	ErrNoClaims     = errors.New("There are no claims in your token")
+	ErrJWTExpired   = errors.New("token has expired")
+	ErrInvalidToken = errors.New("token is an invalid")
+	ErrNoClaims     = errors.New("no claims in token")
 )
 
 // Encodes generates and signs a JWT token for the given payload using the HMAC algorithm.

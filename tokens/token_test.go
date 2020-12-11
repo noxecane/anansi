@@ -10,7 +10,7 @@ import (
 	"syreclabs.com/go/faker"
 )
 
-var sharedTestStore *Store
+var sharedTestStore Store
 var client *redis.Client
 var ctx = context.TODO()
 
@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	sharedTestStore = &Store{redis: client, secret: []byte("mykeys")}
+	sharedTestStore = &store{redis: client, secret: []byte("mykeys")}
 
 	code := m.Run()
 
