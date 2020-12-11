@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -64,34 +63,8 @@ type Client struct {
 	headlessDuration time.Duration
 }
 
-type Token struct {
-	value    string
-	headless bool
-}
-
 type jSendSuccess struct {
 	Data map[string]interface{} `json:"data"`
-}
-
-// BearerToken sets the token to the session token store in the passed request
-func (c *Client) BearerToken(r *http.Request) (Token, error) {
-	auth := strings.Split(r.Header.Get("Authorization"), " ")
-
-	if len(auth) != 2 {
-		return Token{}, fmt.Errorf("authorization header value is incorrect: %s", r.Header.Get("Authorization"))
-	}
-
-	return Token{strings.TrimSpace(auth[1]), false}, nil
-}
-
-// HeadlessToken creates a token to be used with the client's scheme
-func (c *Client) HeadlessToken(v interface{}) (Token, error) {
-	token, err := jwt.EncodeEmbedded(c.serviceSecret, c.headlessDuration, v)
-	if err != nil {
-		return Token{}, err
-	}
-
-	return Token{token, true}, nil
 }
 
 // NewRequest is a wrapper around http.NewRequest that proxies the authentication and enables
