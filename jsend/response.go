@@ -30,7 +30,7 @@ func Success(r *http.Request, w http.ResponseWriter, v interface{}) {
 		Msg("")
 }
 
-// Errx sends a JSend error message. It logs the response if a zerolog.Logger is attached to the request.
+// Error sends a JSend error message. It logs the response if a zerolog.Logger is attached to the request.
 func Error(r *http.Request, w http.ResponseWriter, err Err) {
 	log := zerolog.Ctx(r.Context())
 	raw := getJSON(log, err)
