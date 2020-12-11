@@ -94,16 +94,16 @@ func (c *Client) HeadlessToken(v interface{}) (Token, error) {
 	return Token{token, true}, nil
 }
 
-// NewRequest is a wrapper around http.NNewRequest that adds the required
-// headers for distributed tracing. The requests will only last as long as the parent
-// request(it uses the request's context)
-func (c *Client) NewRequest(r *http.Request, method, url string, token Token, body io.Reader) (*http.Request, error) {
+// NewRequest is a wrapper around http.NewRequest that proxies the authentication and enables
+// distributed tracing. Note this request lasts as long as the parent request.
+func (c *Client) NewRequest(r *http.Request, method, url string, body io.Reader) (*http.Request, error) {
 	reqId := r.Header.Get("X-Request-Id")
 	if reqId == "" {
 		return nil, ErrNoRequestID
 	}
 
-	if token.value == "" {
+	auth := r.Header.Get("Authorization")
+	if auth == "" {
 		return nil, ErrNoAuthentication
 	}
 
@@ -112,16 +112,9 @@ func (c *Client) NewRequest(r *http.Request, method, url string, token Token, bo
 		return nil, err
 	}
 
-	var scheme string
-	if token.headless {
-		scheme = c.headlessScheme
-	} else {
-		scheme = "Bearer"
-	}
-
 	req.Header.Set("X-Origin-Service", c.serviceName)
 	req.Header.Set("X-Request-Id", reqId)
-	req.Header.Set("Authorization", fmt.Sprintf("%s %s", scheme, token.value))
+	req.Header.Set("Authorization", auth)
 
 	return req, nil
 }
