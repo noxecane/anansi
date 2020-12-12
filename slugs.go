@@ -1,4 +1,4 @@
-package siber
+package anansi
 
 // Again stealing from those that have sense
 // https://github.com/kelseyhightower/envconfig/blob/master/envconfig.go

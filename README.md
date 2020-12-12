@@ -1,4 +1,4 @@
-# siber
+# anansi
 
 Helper tools for [go-chi](https://github.com/go-chi/chi)
 
@@ -23,7 +23,7 @@ go get -u github.com/tsaron/anansi/
 
 // embed basic env in your env struct
 type AppEnv struct {
-    siber.BasicEnv
+    anansi.BasicEnv
 }
 
 type Book struct {
