@@ -28,7 +28,7 @@ jobs:
             - vendors
 workflows:
   version: 2
-  test-deploy:
+  test-only:
     jobs:
       - test:
           context: cast
