@@ -105,7 +105,7 @@ func TestReadJSON(t *testing.T) {
 
 	t.Run("fails with validation error", func(t *testing.T) {
 		message := "We could not validate your request."
-		defer checkErr(t, http.StatusUnprocessableEntity, false, true, message)
+		defer checkErr(t, http.StatusBadRequest, false, true, message)
 
 		data := `{ "extra": [1,2,3]}`
 		req := httptest.NewRequest("POST", "http://www.example.com", strings.NewReader(data))
