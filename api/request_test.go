@@ -44,8 +44,8 @@ func TestIDParam(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if resp.Code != http.StatusBadRequest {
-			t.Errorf("Expected the status code to be %d, got %d", http.StatusBadRequest, resp.Code)
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("Expected the status code to be %d, got %d", http.StatusBadRequest, res.Code)
 		}
 
 		if resp.Message != errMessage {
@@ -64,8 +64,8 @@ func TestIDParam(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if resp.Code != http.StatusBadRequest {
-			t.Errorf("Expected the status code to be %d, got %d", http.StatusBadRequest, resp.Code)
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("Expected the status code to be %d, got %d", http.StatusBadRequest, res.Code)
 		}
 
 		if resp.Message != errMessage {

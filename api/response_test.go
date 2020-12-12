@@ -123,8 +123,8 @@ func TestErr(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if resp.Code != http.StatusUnprocessableEntity {
-			t.Errorf("Expected the status code to be %d, got %d", http.StatusUnprocessableEntity, resp.Code)
+		if res.Code != http.StatusUnprocessableEntity {
+			t.Errorf("Expected the status code to be %d, got %d", http.StatusUnprocessableEntity, res.Code)
 		}
 
 		if resp.Message != errMessage {
