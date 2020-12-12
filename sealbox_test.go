@@ -1,4 +1,4 @@
-package siber
+package anansi
 
 import (
 	"encoding/base64"
