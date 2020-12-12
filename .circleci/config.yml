@@ -3,7 +3,7 @@ jobs:
   test:
     working_directory: ~/app
     docker:
-      - image: circleci/golang:1.14
+      - image: circleci/golang:1.15
       - image: redis
     environment:
       GOOS: linux
