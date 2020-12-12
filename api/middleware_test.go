@@ -51,14 +51,8 @@ func TestRecoverer(t *testing.T) {
 		req := httptest.NewRequest("GET", "/", nil)
 		router.ServeHTTP(res, req)
 
-		resp := Err{}
-		err := json.Unmarshal(res.Body.Bytes(), &resp)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if resp.Code != http.StatusBadRequest {
-			t.Errorf("Expected the status code to be %d, got %d", http.StatusBadRequest, resp.Code)
+		if res.Code != http.StatusBadRequest {
+			t.Errorf("Expected the status code to be %d, got %d", http.StatusBadRequest, res.Code)
 		}
 	})
 
@@ -112,13 +106,7 @@ func TestHeadless(t *testing.T) {
 	req := httptest.NewRequest("GET", "/", nil)
 	router.ServeHTTP(res, req)
 
-	resp := Err{}
-	err := json.Unmarshal(res.Body.Bytes(), &resp)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if resp.Code != http.StatusUnauthorized {
-		t.Errorf("Expected the status code to be %d, got %d", http.StatusUnauthorized, resp.Code)
+	if res.Code != http.StatusUnauthorized {
+		t.Errorf("Expected the status code to be %d, got %d", http.StatusUnauthorized, res.Code)
 	}
 }

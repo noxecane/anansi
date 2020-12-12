@@ -131,7 +131,7 @@ func TestLoadHeadless(t *testing.T) {
 	store := NewStore(secret, scheme, time.Minute, sharedTestStore)
 
 	t.Run("loads the headless session", func(t *testing.T) {
-		token, err := jwt.EncodeEmbedded(secret, time.Minute, session{"Premium"})
+		token, err := jwt.EncodeStruct(secret, time.Minute, session{"Premium"})
 		if err != nil {
 			t.Fatal(err)
 		}
