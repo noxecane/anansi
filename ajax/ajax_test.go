@@ -1,121 +1,244 @@
 package ajax
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
+	"context"
+	"errors"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/pkg/errors"
+	"github.com/segmentio/ksuid"
 	"github.com/tsaron/anansi/jwt"
 	"syreclabs.com/go/faker"
 )
 
-type mockStruct struct {
-	Name    string   `json:"name"`
-	Company string   `json:"company"`
-	Emails  []string `json:"emails"`
-}
+func TestNewRequest(t *testing.T) {
+	t.Run("sets the right headers", func(t *testing.T) {
+		auth := "Bearer " + faker.Lorem().Characters(32)
+		requestID := faker.Lorem().Characters(16)
+		service := faker.Company().Name()
 
-func TestBearerToken(t *testing.T) {
-	tokenValue := faker.Lorem().Characters(32)
+		req := httptest.NewRequest("GEt", "/", nil)
+		req.Header.Set("Authorization", auth)
+		req.Header.Set("X-Request-ID", requestID)
 
-	req, err := http.NewRequest("GET", "some-url", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Set("Authorization", "Bearer "+tokenValue)
-	req.Header.Set("X-Request-ID", faker.Lorem().Characters(16))
-	fmt.Println(req.Header)
+		client := NewClient(Config{
+			Secret:         []byte("secret"),
+			Service:        service,
+			HeadlessScheme: "scheme",
+		})
 
-	client := NewClient(Config{
-		Secret:         []byte(faker.Lorem().Characters(32)),
-		Service:        "some-service",
-		HeadlessScheme: "some-scheme",
+		req2, err := client.NewRequest(req, "GET", "/internal", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if req2.Header.Get("X-Request-ID") != requestID {
+			t.Errorf("Expected request ID to be %s, got %s", requestID, req2.Header.Get("X-Request-ID"))
+		}
+
+		if req2.Header.Get("Authorization") != auth {
+			t.Errorf("Expected authorization header to be set to %s, got %s", auth, req2.Header.Get("Authorization"))
+		}
+
+		if req2.Header.Get("X-Origin-Service") != service {
+			t.Errorf("Expected origin service of request to be %s, got %s", service, req2.Header.Get("X-Origin-Service"))
+		}
 	})
 
-	token, err := client.BearerToken(req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Run("times out when parent request times out", func(t *testing.T) {
+		client := NewClient(Config{
+			Secret:         []byte("secret"),
+			Service:        faker.Company().Name(),
+			HeadlessScheme: "scheme",
+		})
 
-	ajaxReq, err := client.NewRequest(req, "GET", "some-other-url", token, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			time.Sleep(time.Millisecond * 800)
+			_, _ = w.Write([]byte("too late"))
+		}))
+		defer server.Close()
 
-	if ajaxReq.Header.Get("Authorization") != "Bearer "+tokenValue {
-		t.Errorf("Expected authorization to be \"Bearer %s\", got %s", tokenValue, ajaxReq.Header.Get("Authorization"))
-	}
+		req := httptest.NewRequest("GEt", "/", nil)
+		req.Header.Set("Authorization", "Bearer "+faker.Lorem().Characters(32))
+		req.Header.Set("X-Request-ID", faker.Lorem().Characters(16))
+
+		ctx, cancel := context.WithTimeout(req.Context(), time.Millisecond*500)
+		defer cancel()
+		req = req.WithContext(ctx)
+
+		req2, err := client.NewRequest(req, "GET", server.URL, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		httpClient := server.Client()
+		_, err = httpClient.Do(req2)
+		if err == nil {
+			t.Fatal("Expected request to fail with error")
+		}
+
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("Expected request to fail because deadline was exceeded, got %v", err)
+		}
+	})
 }
 
-func TestHeadlessToken(t *testing.T) {
-	secret := []byte(faker.Lorem().Characters(32))
-	client := NewClient(Config{
-		Secret:         secret,
-		Service:        "some-service",
-		HeadlessScheme: "some-scheme",
+func TestNewHeadlessRequest(t *testing.T) {
+	t.Run("sets the right headers", func(t *testing.T) {
+		type session struct{ User string }
+
+		requestID := faker.Lorem().Characters(16)
+		service := "user-service"
+		scheme := "Test"
+
+		req := httptest.NewRequest("GEt", "/", nil)
+		req.Header.Set("Authorization", "Bearer "+faker.Lorem().Characters(32))
+		req.Header.Set("X-Request-ID", requestID)
+
+		client := NewClient(Config{
+			Secret:         []byte("secret"),
+			Service:        service,
+			HeadlessScheme: scheme,
+		})
+
+		sput := session{ksuid.New().String()}
+		req2, err := client.NewHeadlessRequest(req, "GET", "/internal", sput, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if req2.Header.Get("X-Request-ID") != requestID {
+			t.Errorf("Expected request ID to be %s, got %s", requestID, req2.Header.Get("X-Request-ID"))
+		}
+
+		if req2.Header.Get("X-Origin-Service") != service {
+			t.Errorf("Expected origin service of request to be %s, got %s", service, req2.Header.Get("X-Origin-Service"))
+		}
+
+		header := strings.Fields(req2.Header.Get("Authorization"))
+		if header[0] != scheme {
+			t.Errorf("Expected authorisation scheme to be %s, got %s", scheme, header[0])
+		}
+
+		var sget session
+		if err := jwt.DecodeStruct(client.serviceSecret, []byte(header[1]), &sget); err != nil {
+			t.Fatal(err)
+		}
+		if sput.User != sget.User {
+			t.Errorf("Expected user ID in session to be %s, got %s", sput.User, sget.User)
+		}
 	})
 
-	type sessionInfo struct {
-		Info string
-	}
-	session := sessionInfo{"some-session-info"}
+	t.Run("times out when parent request times out", func(t *testing.T) {
+		client := NewClient(Config{
+			Secret:         []byte("secret"),
+			Service:        faker.Company().Name(),
+			HeadlessScheme: "scheme",
+		})
 
-	token, err := client.HeadlessToken(session)
-	if err != nil {
-		t.Fatal(err)
-	}
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			time.Sleep(time.Millisecond * 800)
+			_, _ = w.Write([]byte("too late"))
+		}))
+		defer server.Close()
 
-	req, err := http.NewRequest("GET", "some-url", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Set("X-Request-ID", faker.Lorem().Characters(16))
+		req := httptest.NewRequest("GEt", "/", nil)
+		req.Header.Set("Authorization", "Bearer "+faker.Lorem().Characters(32))
+		req.Header.Set("X-Request-ID", faker.Lorem().Characters(16))
 
-	ajaxReq, err := client.NewRequest(req, "GET", "some-other-url", token, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+		ctx, cancel := context.WithTimeout(req.Context(), time.Millisecond*500)
+		defer cancel()
+		req = req.WithContext(ctx)
 
-	if ajaxReq.Header.Get("Authorization") != fmt.Sprintf("%s %s", client.headlessScheme, token.value) {
-		t.Fatalf("Expected authorization to be \"%s %s\", got %s", client.headlessScheme, token.value, ajaxReq.Header.Get("Authorization"))
-	}
+		req2, err := client.NewHeadlessRequest(req, "GET", server.URL, struct{}{}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	auth := strings.Split(ajaxReq.Header.Get("Authorization"), " ")
-	tokenStr := strings.TrimSpace(auth[1])
+		httpClient := server.Client()
+		_, err = httpClient.Do(req2)
+		if err == nil {
+			t.Fatal("Expected request to fail with error")
+		}
 
-	var loadedSession sessionInfo
-	if err := jwt.DecodeStruct(secret, []byte(tokenStr), &loadedSession); err != nil {
-		t.Fatal(err)
-	}
-
-	if loadedSession.Info != session.Info {
-		t.Errorf("Expected session to store %s, got %s", session.Info, loadedSession.Info)
-	}
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("Expected request to fail because deadline was exceeded, got %v", err)
+		}
+	})
 }
 
-func TestGetResponse(t *testing.T) {
-	name := faker.Name().FirstName()
-	b, err := json.Marshal(map[string]string{"name": name})
-	if err != nil {
-		panic(err)
-	}
+func TestNewBaseRequest(t *testing.T) {
+	t.Run("sets the right headers", func(t *testing.T) {
+		type session struct{ User string }
+		client := NewClient(Config{
+			Secret:         []byte("secret"),
+			Service:        "user-service",
+			HeadlessScheme: "Test",
+		})
 
-	res := http.Response{
-		Body: ioutil.NopCloser(bytes.NewBuffer(b)),
-	}
+		sput := session{ksuid.New().String()}
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 
-	var data mockStruct
-	err = GetResponse(&res, &data)
-	if err != nil {
-		t.Fatal(errors.Wrap(err, "error getting response"))
-	}
+		req, err := client.NewBaseRequest(ctx, "GET", "/internal", sput, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	if data.Name != name {
-		t.Fatalf("expected %s got %s", name, data.Name)
-	}
+		if req.Header.Get("X-Request-ID") == "" {
+			t.Error("Expected request ID to be set")
+		}
+
+		if req.Header.Get("X-Origin-Service") != client.serviceName {
+			t.Errorf("Expected origin service of request to be %s, got %s", client.serviceName, req.Header.Get("X-Origin-Service"))
+		}
+
+		header := strings.Fields(req.Header.Get("Authorization"))
+		if header[0] != client.headlessScheme {
+			t.Errorf("Expected authorisation scheme to be %s, got %s", client.headlessScheme, header[0])
+		}
+
+		var sget session
+		if err := jwt.DecodeStruct(client.serviceSecret, []byte(header[1]), &sget); err != nil {
+			t.Fatal(err)
+		}
+		if sput.User != sget.User {
+			t.Errorf("Expected user ID in session to be %s, got %s", sput.User, sget.User)
+		}
+	})
+
+	t.Run("times out when parent request times out", func(t *testing.T) {
+		client := NewClient(Config{
+			Secret:         []byte("secret"),
+			Service:        faker.Company().Name(),
+			HeadlessScheme: "scheme",
+		})
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			time.Sleep(time.Millisecond * 400)
+			_, _ = w.Write([]byte("too late"))
+		}))
+		defer server.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
+		defer cancel()
+
+		req, err := client.NewBaseRequest(ctx, "GET", server.URL, struct{}{}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		httpClient := server.Client()
+		_, err = httpClient.Do(req)
+		if err == nil {
+			t.Fatal("Expected request to fail with error")
+		}
+
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("Expected request to fail because deadline was exceeded, got %v", err)
+		}
+	})
 }

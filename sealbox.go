@@ -1,4 +1,4 @@
-package anansi
+package siber
 
 import (
 	"crypto/rand"
