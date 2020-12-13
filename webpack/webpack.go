@@ -18,7 +18,7 @@ type WebpackOpts struct {
 	Timeout          time.Duration         // Duration before request context times out. Defaults to 1 minute
 	CompressionLevel int                   // Level of compression for responses, ranging from 1-9. Defaults to 5
 	CORSOrigins      []string              // list of allowed origins
-	registry         prometheus.Registerer // registry for prometheus. This is where we add response time collector
+	Registry         prometheus.Registerer // registry for prometheus. This is where we add response time collector
 }
 
 // Webpack sets a reasonable set of middleware in the right order taking into consideration
@@ -69,8 +69,8 @@ func Webpack(router *chi.Mux, log zerolog.Logger, conf WebpackOpts) {
 	router.Use(requests.Timeout(conf.Timeout))
 
 	router.Use(responses.ResponseTime)
-	if conf.registry != nil {
-		router.Use(responses.RequestDuration(conf.registry))
+	if conf.Registry != nil {
+		router.Use(responses.RequestDuration(conf.Registry))
 	}
 	router.Use(api.Recoverer(conf.Environment))
 }
