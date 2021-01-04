@@ -32,6 +32,7 @@ func LoadBearer(s *sessions.Store, r *http.Request, v interface{}) {
 		panic(Err{
 			Code:    http.StatusUnauthorized,
 			Message: "Your token is either invalid or has expired",
+			Err:     err,
 		})
 	}
 }
@@ -62,6 +63,7 @@ func LoadHeadless(s *sessions.Store, r *http.Request, v interface{}) {
 		panic(Err{
 			Code:    http.StatusUnauthorized,
 			Message: "Your token is either invalid or has expired",
+			Err:     err,
 		})
 	}
 }
@@ -92,6 +94,7 @@ func Load(s *sessions.Store, r *http.Request, v interface{}) {
 		panic(Err{
 			Code:    http.StatusUnauthorized,
 			Message: "Your token is either invalid or has expired",
+			Err:     err,
 		})
 	}
 }
