@@ -64,7 +64,7 @@ func Headless(store *sessions.Store) func(http.Handler) http.Handler {
 			var empty void
 
 			// force a panic if you have to
-			LoadHeadless(store, r, empty)
+			LoadHeadless(store, r, &empty)
 
 			// nothing to worry about
 			next.ServeHTTP(w, r)

@@ -13,6 +13,11 @@ import (
 
 var store *sessions.Store
 
+const (
+	secret = "monday-is-not-your-mate"
+	scheme = "Test"
+)
+
 func TestMain(m *testing.M) {
 	var err error
 
@@ -27,8 +32,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	secret := []byte("monday-is-not-your-mate")
-	store = sessions.NewStore(secret, "Test", time.Minute, tokens.NewStore(client, secret))
+	store = sessions.NewStore([]byte(secret), scheme, time.Minute, tokens.NewStore(client, []byte(secret)))
 
 	defer os.Exit(m.Run())
 

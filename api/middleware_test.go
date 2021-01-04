@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/tsaron/anansi/json"
+	"github.com/tsaron/anansi/jwt"
 	"github.com/tsaron/anansi/requests"
 )
 
@@ -102,11 +103,33 @@ func TestHeadless(t *testing.T) {
 		_, _ = w.Write([]byte("."))
 	})
 
-	res := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/", nil)
-	router.ServeHTTP(res, req)
+	t.Run("panics with 401", func(t *testing.T) {
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/", nil)
+		router.ServeHTTP(res, req)
 
-	if res.Code != http.StatusUnauthorized {
-		t.Errorf("Expected the status code to be %d, got %d", http.StatusUnauthorized, res.Code)
-	}
+		if res.Code != http.StatusUnauthorized {
+			t.Errorf("Expected the status code to be %d, got %d", http.StatusUnauthorized, res.Code)
+		}
+	})
+
+	t.Run("panics with 401", func(t *testing.T) {
+		type session struct {
+			Name string
+		}
+
+		token, err := jwt.EncodeStruct([]byte(secret), time.Minute, session{"Premium"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/", nil)
+		req.Header.Set("Authorization", scheme+" "+token)
+		router.ServeHTTP(res, req)
+
+		if res.Code != http.StatusOK {
+			t.Errorf("Expected the status code to be %d, got %d", http.StatusOK, res.Code)
+		}
+	})
 }
