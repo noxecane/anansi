@@ -1,0 +1,48 @@
+name: Go
+
+on:
+  push:
+    branches-ignore:
+      - master
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6327:6327
+
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      
+      - name: Restore cache
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            vendor
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Build and test
+        run: |
+          go mod tidy
+          go mod vendor
+          go vet ./...
+          go build ./...
+          go test -v ./... | sed ''/PASS/s//$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$(printf "\033[31mFAIL\033[0m")/''
+        env:
+          GOOS: linux
+          GOARCH: amd64
+          GOFLAGS: mod=vendor
+          CGO_ENABLED: 0
