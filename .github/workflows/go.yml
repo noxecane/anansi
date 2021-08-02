@@ -1,4 +1,4 @@
-name: Go
+name: Build & Test
 
 on:
   push:
@@ -8,6 +8,12 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis
+        ports:
+        - 6327:6327
     
     steps:
     - name: Set up Go
@@ -34,3 +40,8 @@ jobs:
         go vet ./...
         go build ./...
         go test -v ./... | sed ''/PASS/s//$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$(printf "\033[31mFAIL\033[0m")/''
+      env:
+        GOOS: linux
+        GOARCH: amd64
+        GOFLAGS: mod=vendor
+        CGO_ENABLED: 0
