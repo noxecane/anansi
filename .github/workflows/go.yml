@@ -44,5 +44,5 @@ jobs:
         env:
           GOOS: linux
           GOARCH: amd64
-          GOFLAGS: mod=vendor
+          GOFLAGS: -mod=vendor
           CGO_ENABLED: 0
