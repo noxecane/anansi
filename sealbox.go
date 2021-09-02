@@ -48,7 +48,7 @@ func Decrypt(secret []byte, encrypted string) ([]byte, error) {
 	var decrypted []byte
 	var ok bool
 	if decrypted, ok = secretbox.Open(nil, encBytes[24:], &decryptNonce, &secretKey); !ok {
-		return nil, errors.New("Could not decrypt your message")
+		return nil, errors.New("could not decrypt your message")
 	}
 
 	return decrypted, nil
