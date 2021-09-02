@@ -37,7 +37,7 @@ func main() {
 
     router := chi.NewRouter()
     chix.DefaultMiddleware(env, log, router)
-    router.Get("/api/v1/books/:id", func(w http.ResponseWriter, r *http.Request) {
+    router.Get("/api/v1/books", func(w http.ResponseWriter, r *http.Request) {
 
     })
 
