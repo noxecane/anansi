@@ -28,3 +28,7 @@ func RandomString(s int) (string, error) {
 	b, err := RandomBytes(s / 2)
 	return hex.EncodeToString(b), err
 }
+
+func Okay() {
+
+}
