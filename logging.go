@@ -23,7 +23,3 @@ func NewLogger(service string) zerolog.Logger {
 		Str("host", host).
 		Logger()
 }
-
-func Ganes() {
-
-}
