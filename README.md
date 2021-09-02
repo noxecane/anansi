@@ -38,7 +38,7 @@ func main() {
     router := chi.NewRouter()
     chix.DefaultMiddleware(env, log, router)
     router.Get("/api/v1/books", func(w http.ResponseWriter, r *http.Request) {
-
+        // return all books from the DB, or at least some
     })
 
 }
