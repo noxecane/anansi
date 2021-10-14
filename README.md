@@ -14,7 +14,7 @@ Helper tools for [go-chi](https://github.com/go-chi/chi)
 ## Install
 
 ```sh
-go get -u github.com/tsaron/anansi/
+go get -u github.com/noxecane/anansi/
 ```
 
 ## Example
