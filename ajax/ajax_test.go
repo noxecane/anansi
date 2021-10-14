@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/noxecane/anansi/jwt"
 	"github.com/segmentio/ksuid"
-	"github.com/tsaron/anansi/jwt"
 	"syreclabs.com/go/faker"
 )
 

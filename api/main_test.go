@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/tsaron/anansi/sessions"
-	"github.com/tsaron/anansi/tokens"
+	"github.com/noxecane/anansi/sessions"
+	"github.com/noxecane/anansi/tokens"
 )
 
 var store *sessions.Store

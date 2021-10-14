@@ -14,7 +14,7 @@ import (
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-playground/mold/v3"
 	"github.com/go-playground/mold/v3/modifiers"
-	"github.com/tsaron/anansi/json"
+	"github.com/noxecane/anansi/json"
 )
 
 var (

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi"
-	"github.com/tsaron/anansi/json"
+	"github.com/noxecane/anansi/json"
 	"syreclabs.com/go/faker"
 )
 

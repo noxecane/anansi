@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi"
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/tsaron/anansi/json"
+	"github.com/noxecane/anansi/json"
 	"syreclabs.com/go/faker"
 )
 

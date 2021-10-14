@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/tsaron/anansi/requests"
+	"github.com/noxecane/anansi/requests"
 )
 
 // ReadJSON parses the body of an http request into the value pointed by v.

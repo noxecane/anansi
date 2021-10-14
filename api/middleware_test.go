@@ -12,9 +12,9 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/rs/zerolog"
 
-	"github.com/tsaron/anansi/json"
-	"github.com/tsaron/anansi/jwt"
-	"github.com/tsaron/anansi/requests"
+	"github.com/noxecane/anansi/json"
+	"github.com/noxecane/anansi/jwt"
+	"github.com/noxecane/anansi/requests"
 )
 
 func TestRecoverer(t *testing.T) {

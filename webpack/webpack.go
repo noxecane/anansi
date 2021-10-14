@@ -5,11 +5,11 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/noxecane/anansi/api"
+	"github.com/noxecane/anansi/requests"
+	"github.com/noxecane/anansi/responses"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
-	"github.com/tsaron/anansi/api"
-	"github.com/tsaron/anansi/requests"
-	"github.com/tsaron/anansi/responses"
 )
 
 // WebpackOpts are configuration values for the Webpack middleware

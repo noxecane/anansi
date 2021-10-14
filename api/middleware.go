@@ -7,8 +7,8 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/noxecane/anansi/sessions"
 	"github.com/rs/zerolog"
-	"github.com/tsaron/anansi/sessions"
 )
 
 // STACK_SIZE is the number of bytes to print to stderr when recovering from a panic

@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/noxecane/anansi/api"
+	"github.com/noxecane/anansi/json"
+	"github.com/noxecane/anansi/jwt"
 	"github.com/pkg/errors"
-	"github.com/tsaron/anansi/api"
-	"github.com/tsaron/anansi/json"
-	"github.com/tsaron/anansi/jwt"
 )
 
 var (

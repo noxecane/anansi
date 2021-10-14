@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/noxecane/anansi/responses"
 	"github.com/rs/zerolog"
-	"github.com/tsaron/anansi/responses"
 )
 
 // Success sends a JSend success message with status code 200. It logs the response

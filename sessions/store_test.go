@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/tsaron/anansi/jwt"
-	"github.com/tsaron/anansi/tokens"
+	"github.com/noxecane/anansi/jwt"
+	"github.com/noxecane/anansi/tokens"
 )
 
 var sharedTestStore tokens.Store

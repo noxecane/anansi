@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/noxecane/anansi/json"
 	"github.com/rs/zerolog"
-	"github.com/tsaron/anansi/json"
 	"syreclabs.com/go/faker"
 )
 

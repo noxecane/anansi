@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/tsaron/anansi/json"
+	"github.com/noxecane/anansi/json"
 )
 
 var (

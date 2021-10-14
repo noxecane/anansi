@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/tsaron/anansi/sessions"
+	"github.com/noxecane/anansi/sessions"
 )
 
 func LoadBearer(s *sessions.Store, r *http.Request, v interface{}) {

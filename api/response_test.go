@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi"
+	"github.com/noxecane/anansi/json"
+	"github.com/noxecane/anansi/requests"
 	"github.com/rs/zerolog"
-	"github.com/tsaron/anansi/json"
-	"github.com/tsaron/anansi/requests"
 	"syreclabs.com/go/faker"
 )
 
