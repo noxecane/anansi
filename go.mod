@@ -1,4 +1,4 @@
-module github.com/tsaron/anansi
+module github.com/noxecane/anansi
 
 go 1.16
 
