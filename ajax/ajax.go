@@ -95,7 +95,7 @@ func (c *Client) NewHeadlessRequest(r *http.Request, method, url string, session
 		return nil, ErrNoRequestID
 	}
 
-	token, err := jwt.EncodeStruct(c.serviceSecret, c.headlessDuration, session)
+	token, err := jwt.Encode(c.serviceSecret, c.headlessDuration, session)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create headless token")
 	}
@@ -117,7 +117,7 @@ func (c *Client) NewHeadlessRequest(r *http.Request, method, url string, session
 func (c *Client) NewBaseRequest(ctx context.Context, method, url string, session interface{}, body io.Reader) (*http.Request, error) {
 	reqId := NextRequestID()
 
-	token, err := jwt.EncodeStruct(c.serviceSecret, c.headlessDuration, session)
+	token, err := jwt.Encode(c.serviceSecret, c.headlessDuration, session)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create headless token")
 	}

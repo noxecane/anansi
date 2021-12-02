@@ -1,134 +1,73 @@
 package jwt
 
 import (
-	"fmt"
-	"reflect"
 	"time"
 
-	"github.com/golang-jwt/jwt"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
+	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
-
-const expiredErr = jwt.ValidationErrorExpired | jwt.ValidationErrorNotValidYet
 
 var (
 	ErrJWTExpired   = errors.New("token has expired")
 	ErrInvalidToken = errors.New("token is an invalid")
-	ErrNoClaims     = errors.New("no claims in token")
 )
 
-// Encodes generates and signs a JWT token for the given payload using the HMAC algorithm.
-func Encode(secret []byte, t time.Duration, payload map[string]interface{}) (string, error) {
-	jwtClaims := jwt.MapClaims{
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Add(t).Unix(),
-	}
-
-	for k, v := range payload {
-		jwtClaims[k] = v
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtClaims)
-
-	return token.SignedString(secret)
+type CustomClaim struct {
+	jwt.Claims
+	CustomClaims interface{} `json:"urn:custom:claims"`
 }
 
-// EncodeStruct generates a JWT token for the given struct using the HMAC algorithm.
-func EncodeStruct(secret []byte, t time.Duration, v interface{}) (string, error) {
-	payload := make(map[string]interface{})
-
-	r := reflect.ValueOf(v)
-	if r.Kind() == reflect.Ptr {
-		r = r.Elem()
+// Encode encodes and encrypts claims as JWE. Note that the claim passed is wrapped to prevent clash
+// Make sure your secret is at least 32 bytes
+func Encode(secret []byte, t time.Duration, v interface{}) (string, error) {
+	enc, err := jose.NewEncrypter(
+		jose.A256GCM,
+		jose.Recipient{Algorithm: jose.DIRECT, Key: secret},
+		&jose.EncrypterOptions{ExtraHeaders: map[jose.HeaderKey]interface{}{jose.HeaderType: "JWT"}},
+	)
+	if err != nil {
+		return "", err
 	}
 
-	// we only accept structs
-	if r.Kind() != reflect.Struct {
-		return "", errors.Errorf("can only encode structs; got %T", v)
-	}
+	if c, ok := v.(CustomClaim); ok {
+		c.IssuedAt = jwt.NewNumericDate(time.Now())
+		c.Expiry = jwt.NewNumericDate(time.Now().Add(t))
 
-	typ := r.Type()
-	for i := 0; i < r.NumField(); i++ {
-		ft := typ.Field(i)
-
-		// use json tag if available
-		n := ft.Tag.Get("json")
-		if n == "" {
-			n = ft.Name
+		return jwt.Encrypted(enc).Claims(c).CompactSerialize()
+	} else {
+		def := jwt.Claims{
+			IssuedAt: jwt.NewNumericDate(time.Now()),
+			Expiry:   jwt.NewNumericDate(time.Now().Add(t)),
 		}
+		c := CustomClaim{Claims: def, CustomClaims: v}
 
-		payload[n] = r.Field(i).Interface()
+		return jwt.Encrypted(enc).Claims(c).CompactSerialize()
 	}
-
-	return Encode(secret, t, payload)
 }
 
-// EncodeEmbedded attaches the payload as an entry to the final claim using the key
-// `claim` to prevent clashes with JWT field names.
-func EncodeEmbedded(secret []byte, t time.Duration, v interface{}) (string, error) {
-	return Encode(secret, t, map[string]interface{}{"claim": v})
-}
-
-// Decode validates and parses the given JWT token into a map
-func Decode(secret []byte, token []byte) (map[string]interface{}, error) {
-	jwtToken, err := jwt.Parse(string(token), func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return secret, nil
-	})
-
-	if jwtToken == nil || !jwtToken.Valid {
-		if verr, ok := err.(*jwt.ValidationError); ok {
-			switch {
-			case verr.Errors&jwt.ValidationErrorMalformed != 0:
-				return nil, ErrInvalidToken
-			case verr.Errors&expiredErr != 0:
-				return nil, ErrJWTExpired
-			default:
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
-	}
-
-	claims, ok := jwtToken.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, errors.New("could not convert JWT to map claims")
-	}
-
-	return claims, nil
-}
-
-// DecodeStruct validates and parses a JWT token into a struct.
-func DecodeStruct(secret []byte, tokenBytes []byte, v interface{}) error {
-	claims, err := Decode(secret, tokenBytes)
+// Decodes and decrypts a JWE token. Note that it expects the claim to be wrapped
+// using `urn:custom:claims`. Make sure your secret is at least 32 bytes
+func Decode(secret []byte, token string, v interface{}) error {
+	tok, err := jwt.ParseEncrypted(token)
 	if err != nil {
 		return err
 	}
 
-	// convert claims data map to struct
-	config := &mapstructure.DecoderConfig{Result: v, TagName: `json`}
-	decoder, err := mapstructure.NewDecoder(config)
-	if err != nil {
-		return errors.Wrap(err, "could not convert claims to struct")
+	var claims CustomClaim
+	if err := tok.Claims(secret, &claims); err != nil {
+		return ErrInvalidToken
 	}
 
-	return decoder.Decode(claims)
-}
-
-// DecodeEmbedded validates and parses a JWT token into a struct. It expects the
-// struct's payload to be attached to the key `claim` of the actual JWT claim. Note that
-// the struct should have json tags
-func DecodeEmbedded(secret []byte, tokenBytes []byte, v interface{}) error {
-	claims, err := Decode(secret, tokenBytes)
-	if err != nil {
+	if err := claims.ValidateWithLeeway(jwt.Expected{Time: time.Now()}, 0); err != nil {
+		if err == jwt.ErrExpired {
+			return ErrJWTExpired
+		}
 		return err
 	}
 
-	if claims["claim"] == nil {
+	if claims.CustomClaims == nil {
 		return nil
 	}
 
@@ -139,5 +78,5 @@ func DecodeEmbedded(secret []byte, tokenBytes []byte, v interface{}) error {
 		return errors.Wrap(err, "could not convert claims to struct")
 	}
 
-	return decoder.Decode(claims["claim"])
+	return decoder.Decode(claims.CustomClaims)
 }

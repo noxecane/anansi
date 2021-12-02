@@ -113,12 +113,12 @@ func TestHeadless(t *testing.T) {
 		}
 	})
 
-	t.Run("panics with 401", func(t *testing.T) {
+	t.Run("succeeds with correct authorization", func(t *testing.T) {
 		type session struct {
 			Name string
 		}
 
-		token, err := jwt.EncodeStruct([]byte(secret), time.Minute, session{"Premium"})
+		token, err := jwt.Encode([]byte(secret), time.Minute, session{"Premium"})
 		if err != nil {
 			t.Fatal(err)
 		}

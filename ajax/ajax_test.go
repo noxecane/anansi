@@ -14,6 +14,8 @@ import (
 	"syreclabs.com/go/faker"
 )
 
+var secret = []byte("ot4EvohHaeSeeshoo1eih7oow0FooWee")
+
 func TestNewRequest(t *testing.T) {
 	t.Run("sets the right headers", func(t *testing.T) {
 		auth := "Bearer " + faker.Lorem().Characters(32)
@@ -25,7 +27,7 @@ func TestNewRequest(t *testing.T) {
 		req.Header.Set("X-Request-ID", requestID)
 
 		client := NewClient(Config{
-			Secret:         []byte("secret"),
+			Secret:         secret,
 			Service:        service,
 			HeadlessScheme: "scheme",
 		})
@@ -50,7 +52,7 @@ func TestNewRequest(t *testing.T) {
 
 	t.Run("times out when parent request times out", func(t *testing.T) {
 		client := NewClient(Config{
-			Secret:         []byte("secret"),
+			Secret:         secret,
 			Service:        faker.Company().Name(),
 			HeadlessScheme: "scheme",
 		})
@@ -99,7 +101,7 @@ func TestNewHeadlessRequest(t *testing.T) {
 		req.Header.Set("X-Request-ID", requestID)
 
 		client := NewClient(Config{
-			Secret:         []byte("secret"),
+			Secret:         secret,
 			Service:        service,
 			HeadlessScheme: scheme,
 		})
@@ -124,7 +126,7 @@ func TestNewHeadlessRequest(t *testing.T) {
 		}
 
 		var sget session
-		if err := jwt.DecodeStruct(client.serviceSecret, []byte(header[1]), &sget); err != nil {
+		if err := jwt.Decode(client.serviceSecret, header[1], &sget); err != nil {
 			t.Fatal(err)
 		}
 		if sput.User != sget.User {
@@ -134,7 +136,7 @@ func TestNewHeadlessRequest(t *testing.T) {
 
 	t.Run("times out when parent request times out", func(t *testing.T) {
 		client := NewClient(Config{
-			Secret:         []byte("secret"),
+			Secret:         secret,
 			Service:        faker.Company().Name(),
 			HeadlessScheme: "scheme",
 		})
@@ -174,7 +176,7 @@ func TestNewBaseRequest(t *testing.T) {
 	t.Run("sets the right headers", func(t *testing.T) {
 		type session struct{ User string }
 		client := NewClient(Config{
-			Secret:         []byte("secret"),
+			Secret:         secret,
 			Service:        "user-service",
 			HeadlessScheme: "Test",
 		})
@@ -202,7 +204,7 @@ func TestNewBaseRequest(t *testing.T) {
 		}
 
 		var sget session
-		if err := jwt.DecodeStruct(client.serviceSecret, []byte(header[1]), &sget); err != nil {
+		if err := jwt.Decode(client.serviceSecret, header[1], &sget); err != nil {
 			t.Fatal(err)
 		}
 		if sput.User != sget.User {
@@ -212,7 +214,7 @@ func TestNewBaseRequest(t *testing.T) {
 
 	t.Run("times out when parent request times out", func(t *testing.T) {
 		client := NewClient(Config{
-			Secret:         []byte("secret"),
+			Secret:         secret,
 			Service:        faker.Company().Name(),
 			HeadlessScheme: "scheme",
 		})
