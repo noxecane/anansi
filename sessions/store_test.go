@@ -14,7 +14,7 @@ import (
 
 var sharedTestStore tokens.Store
 var client *redis.Client
-var secret = []byte("monday-is-not-your-mate")
+var secret = []byte("ot4EvohHaeSeeshoo1eih7oow0FooWee")
 var scheme = "Test"
 
 func newRedisClient(ctx context.Context) (*redis.Client, error) {

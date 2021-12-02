@@ -14,7 +14,7 @@ import (
 var store *sessions.Store
 
 const (
-	secret = "monday-is-not-your-mate"
+	secret = "ot4EvohHaeSeeshoo1eih7oow0FooWee"
 	scheme = "Test"
 )
 

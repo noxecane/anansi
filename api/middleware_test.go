@@ -113,7 +113,7 @@ func TestHeadless(t *testing.T) {
 		}
 	})
 
-	t.Run("panics with 401", func(t *testing.T) {
+	t.Run("succeeds with correct authorization", func(t *testing.T) {
 		type session struct {
 			Name string
 		}
