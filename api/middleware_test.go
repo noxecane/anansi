@@ -118,7 +118,7 @@ func TestHeadless(t *testing.T) {
 			Name string
 		}
 
-		token, err := jwt.EncodeStruct([]byte(secret), time.Minute, session{"Premium"})
+		token, err := jwt.Encode([]byte(secret), time.Minute, session{"Premium"})
 		if err != nil {
 			t.Fatal(err)
 		}

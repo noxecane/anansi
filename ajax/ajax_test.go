@@ -124,7 +124,7 @@ func TestNewHeadlessRequest(t *testing.T) {
 		}
 
 		var sget session
-		if err := jwt.DecodeStruct(client.serviceSecret, []byte(header[1]), &sget); err != nil {
+		if err := jwt.Decode(client.serviceSecret, header[1], &sget); err != nil {
 			t.Fatal(err)
 		}
 		if sput.User != sget.User {
@@ -202,7 +202,7 @@ func TestNewBaseRequest(t *testing.T) {
 		}
 
 		var sget session
-		if err := jwt.DecodeStruct(client.serviceSecret, []byte(header[1]), &sget); err != nil {
+		if err := jwt.Decode(client.serviceSecret, header[1], &sget); err != nil {
 			t.Fatal(err)
 		}
 		if sput.User != sget.User {

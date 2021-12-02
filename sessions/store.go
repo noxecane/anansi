@@ -61,7 +61,7 @@ func (s *Store) LoadHeadless(r *http.Request, v interface{}) error {
 		return ErrUnsupportedScheme
 	}
 
-	return jwt.DecodeStruct(s.secret, []byte(token), v)
+	return jwt.Decode(s.secret, token, v)
 }
 
 // Load trys both LoadBearer and LoadHeadless.
