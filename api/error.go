@@ -6,7 +6,7 @@ import "fmt"
 type Err struct {
 	Code    int         `json:"-"`
 	Message string      `json:"message"`
-	Data    interface{} `json:"meta"`
+	Data    interface{} `json:"data"`
 	Err     error       `json:"-"`
 }
 
