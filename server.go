@@ -14,7 +14,7 @@ func WithCancel(parent context.Context) (context.Context, context.CancelFunc) {
 		defer cancel()
 
 		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+		signal.Notify(quit, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 		<-quit
 	}()
