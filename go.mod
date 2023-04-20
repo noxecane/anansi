@@ -48,5 +48,5 @@ require (
 	go.uber.org/atomic v1.6.0 // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
-	mellium.im/sasl v0.2.1 // indirect
+	mellium.im/sasl v0.3.1 // indirect
 )
