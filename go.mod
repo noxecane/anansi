@@ -18,7 +18,7 @@ require (
 	github.com/rs/cors v1.8.0
 	github.com/rs/zerolog v1.26.0
 	github.com/segmentio/ksuid v1.0.4
-	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
+	golang.org/x/crypto v0.1.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	syreclabs.com/go/faker v1.2.3
 )
