@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-playground/mold/v4"
 	"github.com/go-playground/mold/v4/modifiers"

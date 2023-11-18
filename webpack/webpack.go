@@ -3,8 +3,8 @@ package webpack
 import (
 	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/noxecane/anansi/api"
 	"github.com/noxecane/anansi/requests"
 	"github.com/noxecane/anansi/responses"

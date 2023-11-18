@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"syreclabs.com/go/faker"
 )

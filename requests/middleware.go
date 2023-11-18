@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog"
 )
 
@@ -24,20 +24,20 @@ import (
 //
 // ie. a route/handler may look like:
 //
-//  r.Get("/long", func(w http.ResponseWriter, r *http.Request) {
-// 	 ctx := r.Context()
-// 	 processTime := time.Duration(rand.Intn(4)+1) * time.Second
+//	 r.Get("/long", func(w http.ResponseWriter, r *http.Request) {
+//		 ctx := r.Context()
+//		 processTime := time.Duration(rand.Intn(4)+1) * time.Second
 //
-// 	 select {
-// 	 case <-ctx.Done():
-// 	 	return
+//		 select {
+//		 case <-ctx.Done():
+//		 	return
 //
-// 	 case <-time.After(processTime):
-// 	 	 // The above channel simulates some hard work.
-// 	 }
+//		 case <-time.After(processTime):
+//		 	 // The above channel simulates some hard work.
+//		 }
 //
-// 	 w.Write([]byte("done"))
-//  })
+//		 w.Write([]byte("done"))
+//	 })
 func Timeout(timeout time.Duration) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {

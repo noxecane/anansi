@@ -3,7 +3,7 @@ module github.com/noxecane/anansi
 go 1.21
 
 require (
-	github.com/go-chi/chi v1.5.5
+	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-jose/go-jose/v3 v3.0.1
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/go-playground/mold/v4 v4.5.0
