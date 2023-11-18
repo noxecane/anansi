@@ -12,8 +12,8 @@ import (
 
 	"github.com/go-chi/chi"
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-playground/mold/v3"
-	"github.com/go-playground/mold/v3/modifiers"
+	"github.com/go-playground/mold/v4"
+	"github.com/go-playground/mold/v4/modifiers"
 	"github.com/noxecane/anansi/json"
 )
 

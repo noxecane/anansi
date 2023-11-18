@@ -1,12 +1,12 @@
 package jwt
 
 import (
+	"errors"
 	"time"
 
+	"github.com/go-jose/go-jose/v3"
+	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 var (
@@ -75,7 +75,7 @@ func Decode(secret []byte, token string, v interface{}) error {
 	config := &mapstructure.DecoderConfig{Result: v, TagName: `json`}
 	decoder, err := mapstructure.NewDecoder(config)
 	if err != nil {
-		return errors.Wrap(err, "could not convert claims to struct")
+		return errors.Join(err, errors.New("could not convert claims to struct"))
 	}
 
 	return decoder.Decode(claims.CustomClaims)

@@ -2,6 +2,7 @@ package ajax
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 	"github.com/noxecane/anansi/api"
 	"github.com/noxecane/anansi/json"
 	"github.com/noxecane/anansi/jwt"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -97,7 +97,7 @@ func (c *Client) NewHeadlessRequest(r *http.Request, method, url string, session
 
 	token, err := jwt.Encode(c.serviceSecret, c.headlessDuration, session)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create headless token")
+		return nil, errors.Join(err, errors.New("could not create headless token"))
 	}
 
 	req, err := http.NewRequestWithContext(r.Context(), method, url, body)
@@ -119,7 +119,7 @@ func (c *Client) NewBaseRequest(ctx context.Context, method, url string, session
 
 	token, err := jwt.Encode(c.serviceSecret, c.headlessDuration, session)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create headless token")
+		return nil, errors.Join(err, errors.New("could not create headless token"))
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, url, body)

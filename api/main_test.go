@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/noxecane/anansi/sessions"
 	"github.com/noxecane/anansi/tokens"
+	"github.com/redis/go-redis/v9"
 )
 
 var store *sessions.Store
