@@ -2,10 +2,11 @@ package api
 
 import (
 	"bytes"
-	"encoding/json"
+	jsonslow "encoding/json"
 	"net/http"
 	"strings"
 
+	"github.com/noxecane/anansi/json"
 	"github.com/noxecane/anansi/responses"
 	"github.com/rs/zerolog"
 )
@@ -47,7 +48,7 @@ func getJSON(log *zerolog.Logger, v interface{}) []byte {
 		log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
 			buffer := new(bytes.Buffer)
 
-			if err := json.Compact(buffer, raw); err != nil {
+			if err := jsonslow.Compact(buffer, raw); err != nil {
 				panic(err)
 			}
 
