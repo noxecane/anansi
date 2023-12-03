@@ -134,23 +134,14 @@ func (c *Client) NewBaseRequest(ctx context.Context, method, url string, session
 	return req, nil
 }
 
-func GetErr(res *http.Response) error {
+func Do(res *http.Response, v interface{}) *api.Err {
 	if res.StatusCode < 400 {
 		return nil
 	}
-
-	var err api.Err
-	if err := json.NewDecoder(res.Body).Decode(&err); err != nil {
-		return err
-	}
-	return err
-}
-
-func GetResponse(res *http.Response, v interface{}) error {
 	err := json.NewDecoder(res.Body).Decode(v)
 	if err != nil {
-		return err
+		jsonErr := &api.Err{Code: 400, Message: "JSON", Err: err}
+		return jsonErr
 	}
-
 	return nil
 }
