@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/go-chi/chi/v5 v5.0.10
-	github.com/go-jose/go-jose/v3 v3.0.1
+	github.com/go-jose/go-jose/v3 v3.0.3
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/go-playground/mold/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
@@ -17,7 +17,7 @@ require (
 	github.com/rs/cors v1.8.0
 	github.com/rs/zerolog v1.31.0
 	github.com/segmentio/ksuid v1.0.4
-	golang.org/x/crypto v0.17.0
+	golang.org/x/crypto v0.19.0
 	syreclabs.com/go/faker v1.2.3
 )
 
@@ -42,7 +42,7 @@ require (
 	github.com/segmentio/go-camelcase v0.0.0-20160726192923-7085f1e3c734 // indirect
 	github.com/segmentio/go-snakecase v1.2.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
