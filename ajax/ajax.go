@@ -143,5 +143,6 @@ func Do(res *http.Response, v interface{}) *api.Err {
 		jsonErr := &api.Err{Code: 400, Message: "JSON", Err: err}
 		return jsonErr
 	}
+
 	return nil
 }
