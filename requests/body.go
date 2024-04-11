@@ -63,7 +63,9 @@ func ReadJSON(r *http.Request, v interface{}) error {
 	}
 
 	err := json.NewDecoder(r.Body).Decode(v)
-
+	if err != nil {
+		return err
+	}
 	if err := generalMold.Struct(r.Context(), v); err != nil {
 		return err
 	}
