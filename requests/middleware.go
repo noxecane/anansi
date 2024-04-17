@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/noxecane/anansi"
 	"github.com/rs/zerolog"
 )
 
@@ -76,18 +76,7 @@ func Log(next http.Handler) http.Handler {
 			})
 		}
 
-		formattedHeaders := make(map[string]interface{})
-
-		for k, v := range r.Header {
-			lowerKey := strings.ToLower(k)
-			if len(v) == 0 {
-				formattedHeaders[lowerKey] = ""
-			} else if len(v) == 1 {
-				formattedHeaders[lowerKey] = v[0]
-			} else {
-				formattedHeaders[lowerKey] = v
-			}
-		}
+		formattedHeaders := anansi.SimpleHeaders(r.Header)
 
 		log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
 			return ctx.

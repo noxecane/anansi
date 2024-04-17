@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -40,13 +39,13 @@ func ReadBody(r *http.Request) ([]byte, error) {
 
 	// copy request body to in memory buffer while being read
 	readSplit := io.TeeReader(r.Body, &buffer)
-	body, err := ioutil.ReadAll(readSplit)
+	body, err := io.ReadAll(readSplit)
 	if err != nil {
 		return nil, err
 	}
 
 	// return what you collected
-	r.Body = ioutil.NopCloser(&buffer)
+	r.Body = io.NopCloser(&buffer)
 
 	return body, nil
 }
@@ -63,27 +62,20 @@ func ReadJSON(r *http.Request, v interface{}) error {
 	}
 
 	err := json.NewDecoder(r.Body).Decode(v)
-	if err != nil {
-		return err
-	}
-	if err := generalMold.Struct(r.Context(), v); err != nil {
-		return err
-	}
 
 	switch {
 	case err == io.EOF:
 		// tell the user all the required attributes
-		err := ozzo.Validate(v)
-		if err != nil {
-			return err
-		}
-		return err
+		return ozzo.Validate(v)
 	case err != nil:
 		return err
 	default:
 		// validate parsed JSON data
-		err = ozzo.Validate(v)
-		if err != nil {
+		if err := generalMold.Struct(r.Context(), v); err != nil {
+			return err
+		}
+
+		if err := ozzo.Validate(v); err != nil {
 			return err
 		}
 	}

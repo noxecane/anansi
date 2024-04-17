@@ -74,3 +74,31 @@ func Webpack(router *chi.Mux, log zerolog.Logger, conf WebpackOpts) {
 	}
 	router.Use(api.Recoverer(conf.Environment))
 }
+
+func HTMLpack(router *chi.Mux, log zerolog.Logger, conf WebpackOpts) {
+	if len(conf.CORSOrigins) > 0 {
+		requests.CORS(conf.Environment, conf.CORSOrigins...)
+	}
+
+	if conf.CompressionLevel == 0 {
+		conf.CompressionLevel = 5
+	}
+
+	if conf.Timeout == 0 {
+		conf.Timeout = time.Minute
+	}
+
+	router.Use(middleware.Compress(conf.CompressionLevel))
+
+	router.Use(middleware.RequestID)
+	router.Use(middleware.RealIP)
+	router.Use(requests.AttachLogger(log))
+	router.Use(requests.Log)
+	router.Use(requests.Timeout(conf.Timeout))
+
+	router.Use(responses.ResponseTime)
+	if conf.Registry != nil {
+		router.Use(responses.RequestDuration(conf.Registry))
+	}
+	router.Use(api.Recoverer(conf.Environment))
+}
