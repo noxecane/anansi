@@ -4,8 +4,8 @@ import (
 	"bytes"
 	jsonslow "encoding/json"
 	"net/http"
-	"strings"
 
+	"github.com/noxecane/anansi"
 	"github.com/noxecane/anansi/json"
 	"github.com/noxecane/anansi/responses"
 	"github.com/rs/zerolog"
@@ -22,7 +22,7 @@ func Success(r *http.Request, w http.ResponseWriter, v interface{}) {
 	log.Info().
 		Int("status", http.StatusOK).
 		Int("length", len(raw)).
-		Interface("response_headers", toLower(w.Header())).
+		Interface("response_headers", anansi.SimpleHeaders(w.Header())).
 		Msg("")
 }
 
@@ -36,7 +36,7 @@ func Error(r *http.Request, w http.ResponseWriter, err Err) {
 	log.Err(err).
 		Int("status", err.Code).
 		Int("length", len(raw)).
-		Interface("response_headers", toLower(w.Header())).
+		Interface("response_headers", anansi.SimpleHeaders(w.Header())).
 		Msg("")
 }
 
@@ -57,21 +57,4 @@ func getJSON(log *zerolog.Logger, v interface{}) []byte {
 	}
 
 	return raw
-}
-
-func toLower(headers http.Header) map[string]interface{} {
-	lowerCaseHeaders := make(map[string]interface{})
-
-	for k, v := range headers {
-		lowerKey := strings.ToLower(k)
-		if len(v) == 0 {
-			lowerCaseHeaders[lowerKey] = ""
-		} else if len(v) == 1 {
-			lowerCaseHeaders[lowerKey] = v[0]
-		} else {
-			lowerCaseHeaders[lowerKey] = v
-		}
-	}
-
-	return lowerCaseHeaders
 }
