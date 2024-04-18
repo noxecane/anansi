@@ -28,7 +28,7 @@ type WebpackOpts struct {
 //
 // - Automatic Request IDs
 //
-// - Response time middleware(and metrics if a registry is passed)
+// - Response time middleware and header(and metrics if a registry is passed)
 //
 // - Real IP middleware
 //
@@ -39,8 +39,6 @@ type WebpackOpts struct {
 // - CORS handling for dev and production
 //
 // - Request Logging
-//
-// - Response time header
 //
 // - Panic Recovery(with special support for api.Error)
 //
@@ -75,11 +73,25 @@ func Webpack(router *chi.Mux, log zerolog.Logger, conf WebpackOpts) {
 	router.Use(api.Recoverer(conf.Environment))
 }
 
+// HTMLPack sets a reasonable set of middleware in the right order taking into consideration
+// those that defer computation(especially)
+//
+// The middleware set up includes:
+//
+// - Automatic Request IDs
+//
+// - Real IP middleware
+//
+// - Compressing response body
+//
+// - Request Logging
+//
+// - Response time header
+//
+// - Panic Recovery(with special support for api.Error)
+//
+// - Timeouts on request context
 func HTMLpack(router *chi.Mux, log zerolog.Logger, conf WebpackOpts) {
-	if len(conf.CORSOrigins) > 0 {
-		requests.CORS(conf.Environment, conf.CORSOrigins...)
-	}
-
 	if conf.CompressionLevel == 0 {
 		conf.CompressionLevel = 5
 	}
@@ -97,8 +109,5 @@ func HTMLpack(router *chi.Mux, log zerolog.Logger, conf WebpackOpts) {
 	router.Use(requests.Timeout(conf.Timeout))
 
 	router.Use(responses.ResponseTime)
-	if conf.Registry != nil {
-		router.Use(responses.RequestDuration(conf.Registry))
-	}
 	router.Use(api.Recoverer(conf.Environment))
 }
