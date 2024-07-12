@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -86,12 +87,13 @@ func Log(next http.Handler) http.Handler {
 				Interface("request_headers", formattedHeaders)
 		})
 
-		requestBody, err := ReadBody(r)
-		if err != nil {
-			panic(err)
-		}
+		contentType := r.Header.Get("Content-Type")
+		if strings.Contains(contentType, "application/json") && r.ContentLength > 0 {
+			requestBody, err := ReadBody(r)
+			if err != nil {
+				panic(err)
+			}
 
-		if len(requestBody) != 0 {
 			log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
 				buffer := new(bytes.Buffer)
 

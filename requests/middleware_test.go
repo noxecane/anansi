@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -78,53 +80,102 @@ func TestLog(t *testing.T) {
 		Body    map[string]interface{} `json:"request"`
 	}
 
-	router := chi.NewRouter()
-	logOut := &bytes.Buffer{}
+	t.Run("logs a JSON request", func(t *testing.T) {
+		router := chi.NewRouter()
+		logOut := &bytes.Buffer{}
 
-	logger := zerolog.
-		New(logOut).
-		With().
-		Timestamp().
-		Logger()
+		logger := zerolog.
+			New(logOut).
+			With().
+			Timestamp().
+			Logger()
 
-	router.Use(AttachLogger(logger))
-	router.Use(Log)
-	router.Post("/attach", func(w http.ResponseWriter, r *http.Request) {
-		// write to buffer
-		log := zerolog.Ctx(r.Context())
-		log.Info().Msg("")
+		router.Use(AttachLogger(logger))
+		router.Use(Log)
+		router.Post("/attach", func(w http.ResponseWriter, r *http.Request) {
+			// write to buffer
+			log := zerolog.Ctx(r.Context())
+			log.Info().Msg("")
 
-		_, _ = w.Write([]byte(""))
+			_, _ = w.Write([]byte(""))
+		})
+
+		name := faker.Name().Name()
+		b, _ := json.Marshal(map[string]string{"name": name})
+
+		req := httptest.NewRequest("POST", "/attach", bytes.NewBuffer(b))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(httptest.NewRecorder(), req)
+
+		logs := requestLog{}
+		_ = json.Unmarshal(logOut.Bytes(), &logs)
+
+		if logs.URL == "" {
+			t.Error("Expected URL to be logged")
+		}
+
+		if logs.Method == "" {
+			t.Error("Expected request method to be logged")
+		}
+
+		if logs.Address == "" {
+			t.Error("Expected request address to be logged")
+		}
+
+		nameInBody, ok := logs.Body["name"].(string)
+		if !ok {
+			t.Errorf("Expected request body to have name as string, got %T", logs.Body["name"])
+		}
+
+		if nameInBody != name {
+			t.Errorf("Expected request body to have name as %s, got %s", name, nameInBody)
+		}
 	})
 
-	name := faker.Name().Name()
-	b, _ := json.Marshal(map[string]string{"name": name})
+	t.Run("logs form request", func(t *testing.T) {
+		router := chi.NewRouter()
+		logOut := &bytes.Buffer{}
 
-	res := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/attach", bytes.NewBuffer(b))
-	router.ServeHTTP(res, req)
+		logger := zerolog.
+			New(logOut).
+			With().
+			Timestamp().
+			Logger()
 
-	logs := requestLog{}
-	_ = json.Unmarshal(logOut.Bytes(), &logs)
+		router.Use(AttachLogger(logger))
+		router.Use(Log)
+		router.Post("/attach", func(w http.ResponseWriter, r *http.Request) {
+			// write to buffer
+			log := zerolog.Ctx(r.Context())
+			log.Info().Msg("")
 
-	if logs.URL == "" {
-		t.Error("Expected URL to be logged")
-	}
+			_, _ = w.Write([]byte(""))
+		})
 
-	if logs.Method == "" {
-		t.Error("Expected request method to be logged")
-	}
+		data := url.Values{"name": []string{faker.Name().Name()}}
 
-	if logs.Address == "" {
-		t.Error("Expected request address to be logged")
-	}
+		req := httptest.NewRequest("POST", "/attach", strings.NewReader(data.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	nameInBody, ok := logs.Body["name"].(string)
-	if !ok {
-		t.Errorf("Expected request body to have name as string, got %T", logs.Body["name"])
-	}
+		router.ServeHTTP(httptest.NewRecorder(), req)
 
-	if nameInBody != name {
-		t.Errorf("Expected request body to have name as %s, got %s", name, nameInBody)
-	}
+		logs := requestLog{}
+		_ = json.Unmarshal(logOut.Bytes(), &logs)
+
+		if logs.URL == "" {
+			t.Error("Expected URL to be logged")
+		}
+
+		if logs.Method == "" {
+			t.Error("Expected request method to be logged")
+		}
+
+		if logs.Address == "" {
+			t.Error("Expected request address to be logged")
+		}
+
+		if logs.Body != nil {
+			t.Errorf("Expected request body to be empty, got %v", logs.Body)
+		}
+	})
 }
