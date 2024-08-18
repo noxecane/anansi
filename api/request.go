@@ -41,6 +41,33 @@ func ReadJSON(r *http.Request, v interface{}) {
 	}
 }
 
+// QueryParams converts the query values of the request into a struct using
+// the "json" tag to map the keys. It supports transformations using modl
+// and validation provided by ozzo. It panics with a 422 if the value fails
+// ozzo validation and 400 due to any other error
+func QueryParam(r *http.Request, v interface{}) {
+	err := requests.QueryParams(r, v)
+	if err == nil {
+		return
+	}
+
+	var e validation.Errors
+	switch {
+	case errors.As(err, &e):
+		panic(Err{
+			Code:    http.StatusBadRequest,
+			Message: "We could not validate your request.",
+			Data:    e,
+		})
+	default:
+		panic(Err{
+			Code:    http.StatusBadRequest,
+			Message: "We cannot parse your request body.",
+			Err:     err,
+		})
+	}
+}
+
 // IDParam extracts a uint URL parameter from the given request. panics with a 400 if
 // the param is not a strin, otherwise it panics with a basic error.
 func IDParam(r *http.Request, name string) uint {
