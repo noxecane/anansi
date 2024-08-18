@@ -1,28 +1,24 @@
 package anansi
 
 import (
-	"net/http"
 	"strings"
 )
 
-// SimpleHeaders is a transformer for headers. It:
-//
-// - converts all header keys to lowercase
-//
-// - all single value headers to strings
-func SimpleHeaders(headers http.Header) map[string]interface{} {
-	lowerCaseHeaders := make(map[string]interface{})
+// SimpleMap flattens a map of string arrays. Useful for headers and query
+// values. Note that it converts all keys to lowercase
+func SimpleMap(m map[string][]string) map[string]interface{} {
+	result := make(map[string]interface{})
 
-	for k, v := range headers {
+	for k, v := range m {
 		lowerKey := strings.ToLower(k)
 		if len(v) == 0 {
-			lowerCaseHeaders[lowerKey] = ""
+			result[lowerKey] = ""
 		} else if len(v) == 1 {
-			lowerCaseHeaders[lowerKey] = v[0]
+			result[lowerKey] = v[0]
 		} else {
-			lowerCaseHeaders[lowerKey] = v
+			result[lowerKey] = v
 		}
 	}
 
-	return lowerCaseHeaders
+	return result
 }

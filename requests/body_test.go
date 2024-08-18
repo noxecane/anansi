@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -17,7 +17,7 @@ import (
 )
 
 type myStruct struct {
-	Name string `json:"name"`
+	Name string `json:"name" mod:"trim"`
 }
 
 func (m *myStruct) Validate() error {
@@ -40,7 +40,7 @@ func TestReadBody(t *testing.T) {
 	}
 
 	// make sure we can still read the body
-	b2, _ := ioutil.ReadAll(req.Body)
+	b2, _ := io.ReadAll(req.Body)
 	if !bytes.Equal(b, b2) {
 		t.Errorf("Expected body to remain unchanged, got %s", string(b2))
 	}

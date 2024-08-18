@@ -7,11 +7,11 @@ require (
 	github.com/go-jose/go-jose/v3 v3.0.3
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/go-playground/mold/v4 v4.5.0
+	github.com/go-viper/mapstructure/v2 v2.1.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/joho/godotenv v1.5.1
 	github.com/json-iterator/go v1.1.12
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.11.1
 	github.com/redis/go-redis/v9 v9.3.0
 	github.com/rs/cors v1.8.0
