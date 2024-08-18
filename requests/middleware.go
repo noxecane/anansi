@@ -77,7 +77,7 @@ func Log(next http.Handler) http.Handler {
 			})
 		}
 
-		formattedHeaders := anansi.SimpleHeaders(r.Header)
+		formattedHeaders := anansi.SimpleMap(r.Header)
 
 		log.UpdateContext(func(ctx zerolog.Context) zerolog.Context {
 			return ctx.

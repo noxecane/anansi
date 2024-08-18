@@ -56,11 +56,11 @@ func (t *htmlTemplate) Render(r *http.Request, w http.ResponseWriter, data any) 
 
 	if err == nil {
 		log.Info().
-			Interface("response_headers", anansi.SimpleHeaders(w.Header())).
+			Interface("response_headers", anansi.SimpleMap(w.Header())).
 			Msg("")
 	} else {
 		log.Err(err).
-			Interface("response_headers", anansi.SimpleHeaders(w.Header())).
+			Interface("response_headers", anansi.SimpleMap(w.Header())).
 			Msg("")
 	}
 

@@ -22,7 +22,7 @@ func Success(r *http.Request, w http.ResponseWriter, v interface{}) {
 	log.Info().
 		Int("status", http.StatusOK).
 		Int("length", len(raw)).
-		Interface("response_headers", anansi.SimpleHeaders(w.Header())).
+		Interface("response_headers", anansi.SimpleMap(w.Header())).
 		Msg("")
 }
 
@@ -36,7 +36,7 @@ func Error(r *http.Request, w http.ResponseWriter, err Err) {
 	log.Err(err).
 		Int("status", err.Code).
 		Int("length", len(raw)).
-		Interface("response_headers", anansi.SimpleHeaders(w.Header())).
+		Interface("response_headers", anansi.SimpleMap(w.Header())).
 		Msg("")
 }
 
