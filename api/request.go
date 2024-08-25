@@ -10,8 +10,8 @@ import (
 )
 
 // ReadJSON parses the body of an http request into the value pointed by v.
-// It panics with a 415 error if the content type is not JSON, a 422 if the value fails
-// ozzo validation and 400 due to any other error(JSON decode error for instance)
+// It panics with a 415 error if the content type is not JSON, a 400 if the value fails
+// ozzo validation or any other error(JSON decode error for instance)
 func ReadJSON(r *http.Request, v interface{}) {
 	err := requests.ReadJSON(r, v)
 	if err == nil {
@@ -43,8 +43,8 @@ func ReadJSON(r *http.Request, v interface{}) {
 
 // QueryParams converts the query values of the request into a struct using
 // the "json" tag to map the keys. It supports transformations using modl
-// and validation provided by ozzo. It panics with a 422 if the value fails
-// ozzo validation and 400 due to any other error
+// and validation provided by ozzo. It panics with a 400 if the value fails
+// ozzo validation or any other error
 func QueryParam(r *http.Request, v interface{}) {
 	err := requests.QueryParams(r, v)
 	if err == nil {
