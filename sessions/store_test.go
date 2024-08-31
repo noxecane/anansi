@@ -85,7 +85,7 @@ func TestLoadBearer(t *testing.T) {
 		Name string
 	}
 
-	store := NewStore(secret, scheme, time.Minute, sharedTestStore)
+	manager := NewManager(sharedTestStore, secret, Config{BearerDuration: time.Minute})
 
 	t.Run("loads the bearer session", func(t *testing.T) {
 		defer flushRedis(context.TODO(), t)
@@ -99,7 +99,7 @@ func TestLoadBearer(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer "+token)
 
 		var s session
-		if err := store.LoadBearer(req, &s); err != nil {
+		if err := manager.LoadBearer(req, &s); err != nil {
 			t.Fatal(err)
 		}
 
@@ -112,7 +112,7 @@ func TestLoadBearer(t *testing.T) {
 		req := httptest.NewRequest("GET", "/entities", nil)
 		req.Header.Set("Authorization", scheme+" engagement")
 
-		err := store.LoadBearer(req, &session{})
+		err := manager.LoadBearer(req, &session{})
 		if err == nil {
 			t.Error("Expected LoadBearer to fail with error")
 		}
@@ -128,7 +128,7 @@ func TestLoadHeadless(t *testing.T) {
 		Name string
 	}
 
-	store := NewStore(secret, scheme, time.Minute, sharedTestStore)
+	manager := NewManager(sharedTestStore, secret, Config{HeadlessScheme: scheme})
 
 	t.Run("loads the headless session", func(t *testing.T) {
 		token, err := jwt.Encode(secret, time.Minute, session{"Premium"})
@@ -140,7 +140,7 @@ func TestLoadHeadless(t *testing.T) {
 		req.Header.Set("Authorization", scheme+" "+token)
 
 		var s session
-		if err := store.LoadHeadless(req, &s); err != nil {
+		if err := manager.LoadHeadless(req, &s); err != nil {
 			t.Fatal(err)
 		}
 
@@ -154,7 +154,7 @@ func TestLoadHeadless(t *testing.T) {
 		req := httptest.NewRequest("GET", "/entities", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 
-		err := store.LoadHeadless(req, &session{})
+		err := manager.LoadHeadless(req, &session{})
 		if err == nil {
 			t.Error("Expected LoadHeadless to fail with error")
 		}

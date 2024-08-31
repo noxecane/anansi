@@ -57,14 +57,14 @@ func Recoverer(env string) func(http.Handler) http.Handler {
 	}
 }
 
-func Headless(store *sessions.Store) func(http.Handler) http.Handler {
+func Headless(manager *sessions.Manager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			type void struct{}
 			var empty void
 
 			// force a panic if you have to
-			LoadHeadless(store, r, &empty)
+			LoadHeadless(manager, r, &empty)
 
 			// nothing to worry about
 			next.ServeHTTP(w, r)
