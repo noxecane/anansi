@@ -6,8 +6,8 @@ import (
 	"github.com/noxecane/anansi/sessions"
 )
 
-func LoadBearer(s *sessions.Store, r *http.Request, v interface{}) {
-	err := s.LoadBearer(r, v)
+func LoadBearer(m *sessions.Manager, r *http.Request, v interface{}) {
+	err := m.LoadBearer(r, v)
 	if err == nil {
 		return
 	}
@@ -37,8 +37,29 @@ func LoadBearer(s *sessions.Store, r *http.Request, v interface{}) {
 	}
 }
 
-func LoadHeadless(s *sessions.Store, r *http.Request, v interface{}) {
-	err := s.LoadHeadless(r, v)
+func LoadCookie(m *sessions.Manager, r *http.Request, v interface{}) {
+	err := m.LoadCookie(r, v)
+	if err == nil {
+		return
+	}
+
+	switch err {
+	case sessions.ErrEmptyAuthCookie:
+		panic(Err{
+			Code:    http.StatusUnauthorized,
+			Message: "Your request is not authenticated",
+		})
+	default:
+		panic(Err{
+			Code:    http.StatusUnauthorized,
+			Message: "Your token is either invalid or has expired",
+			Err:     err,
+		})
+	}
+}
+
+func LoadHeadless(m *sessions.Manager, r *http.Request, v interface{}) {
+	err := m.LoadHeadless(r, v)
 	if err == nil {
 		return
 	}
@@ -68,13 +89,18 @@ func LoadHeadless(s *sessions.Store, r *http.Request, v interface{}) {
 	}
 }
 
-func Load(s *sessions.Store, r *http.Request, v interface{}) {
-	err := s.Load(r, v)
+func Load(m *sessions.Manager, r *http.Request, v interface{}) {
+	err := m.Load(r, v)
 	if err == nil {
 		return
 	}
 
 	switch err {
+	case sessions.ErrEmptyAuthCookie:
+		panic(Err{
+			Code:    http.StatusUnauthorized,
+			Message: "Your request is not authenticated",
+		})
 	case sessions.ErrEmptyHeader:
 		panic(Err{
 			Code:    http.StatusUnauthorized,

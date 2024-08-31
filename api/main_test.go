@@ -11,7 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var store *sessions.Store
+var store *sessions.Manager
 
 const (
 	secret = "ot4EvohHaeSeeshoo1eih7oow0FooWee"
@@ -32,7 +32,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	store = sessions.NewStore([]byte(secret), scheme, time.Minute, tokens.NewStore(client, []byte(secret)))
+	store = sessions.NewManager(
+		tokens.NewStore(client, []byte(secret)), []byte(secret), sessions.Config{
+			BearerDuration: time.Minute,
+		},
+	)
 
 	defer os.Exit(m.Run())
 
