@@ -106,7 +106,7 @@ func (m *Manager) NewCookieSession(r *http.Request, w http.ResponseWriter, v int
 	if err != nil {
 		return err
 	}
-	ck := &http.Cookie{Name: token, Value: token}
+	ck := &http.Cookie{Name: m.cookieKey, Value: token}
 	http.SetCookie(w, html.SecureCookie(m.isProd, ck))
 
 	return nil
