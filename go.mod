@@ -1,10 +1,11 @@
 module github.com/noxecane/anansi
 
-go 1.22
+go 1.23.0
+
 toolchain go1.24.1
 
 require (
-	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-jose/go-jose/v3 v3.0.4
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/go-playground/mold/v4 v4.5.0
