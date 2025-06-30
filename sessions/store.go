@@ -125,7 +125,7 @@ func (m *Manager) LoadCookie(r *http.Request, v any) error {
 		return ErrEmptyAuthCookie
 	}
 
-	return m.store.Extend(r.Context(), ck.Value, m.headlessTimeout, v)
+	return m.store.Extend(r.Context(), ck.Value, m.cookieTimeout, v)
 }
 
 // LoadBearer loads a stateful session using the session from key the authorization header.
