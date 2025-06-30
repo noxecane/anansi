@@ -91,29 +91,35 @@ func NewManager(store tokens.Store, secret []byte, config Config) *Manager {
 }
 
 // NewHeadlessToken creates a new token for headless session access
-func (m *Manager) NewHeadlessToken(r *http.Request, k string, v interface{}) (string, error) {
+func (m *Manager) NewHeadlessToken(r *http.Request, k string, v any) (string, error) {
 	return m.store.Commission(r.Context(), m.headlessTimeout, k, v)
 }
 
 // NewBearerToken creates a new token for bearer session access
-func (m *Manager) NewBearerToken(r *http.Request, k string, v interface{}) (string, error) {
+func (m *Manager) NewBearerToken(r *http.Request, k string, v any) (string, error) {
 	return m.store.Commission(r.Context(), m.bearerTimeout, k, v)
 }
 
-// NewCookieSession creates and writes a cookie that gives access to the session
-func (m *Manager) NewCookieSession(r *http.Request, w http.ResponseWriter, v interface{}) error {
+// NewRestrictedCookieSession creates and writes a cookie that gives access to the session only
+// on the specified path. This is useful for limiting the scope of the session
+func (m *Manager) NewStrictedCookieSession(r *http.Request, w http.ResponseWriter, path string, v any) error {
 	token, err := m.store.Commission(r.Context(), m.cookieTimeout, m.cookieKey, v)
 	if err != nil {
 		return err
 	}
-	ck := &http.Cookie{Name: m.cookieKey, Value: token}
+	ck := &http.Cookie{Name: m.cookieKey, Value: token, Path: path}
 	http.SetCookie(w, html.SecureCookie(m.isProd, ck))
 
 	return nil
 }
 
+// NewCookieSession creates and writes a cookie that gives access to the session
+func (m *Manager) NewCookieSession(r *http.Request, w http.ResponseWriter, v any) error {
+	return m.NewStrictedCookieSession(r, w, "/", v)
+}
+
 // LoadCookie loads a stateful session from the request's cookie.
-func (m *Manager) LoadCookie(r *http.Request, v interface{}) error {
+func (m *Manager) LoadCookie(r *http.Request, v any) error {
 	ck, _ := r.Cookie(m.cookieKey)
 	if ck == nil {
 		return ErrEmptyAuthCookie
@@ -123,7 +129,7 @@ func (m *Manager) LoadCookie(r *http.Request, v interface{}) error {
 }
 
 // LoadBearer loads a stateful session using the session from key the authorization header.
-func (m *Manager) LoadBearer(r *http.Request, v interface{}) error {
+func (m *Manager) LoadBearer(r *http.Request, v any) error {
 	scheme, token, err := getAuthorization(r)
 	if err != nil {
 		return err
@@ -137,7 +143,7 @@ func (m *Manager) LoadBearer(r *http.Request, v interface{}) error {
 }
 
 // LoadHeadless loads a stateless session from the encoded token in the authorization header.
-func (m *Manager) LoadHeadless(r *http.Request, v interface{}) error {
+func (m *Manager) LoadHeadless(r *http.Request, v any) error {
 	scheme, token, err := getAuthorization(r)
 	if err != nil {
 		return err
@@ -151,7 +157,7 @@ func (m *Manager) LoadHeadless(r *http.Request, v interface{}) error {
 }
 
 // Load to load either bearer, cookie or headless session
-func (m *Manager) Load(r *http.Request, v interface{}) error {
+func (m *Manager) Load(r *http.Request, v any) error {
 	err := m.LoadBearer(r, v)
 	if err == ErrEmptyHeader {
 		return m.LoadCookie(r, v)
