@@ -82,7 +82,7 @@ func NewManager(store tokens.Store, secret []byte, config Config) *Manager {
 		store:           store,
 		secret:          secret,
 		isProd:          config.IsProduction,
-		scheme:          config.HeadlessScheme,
+		scheme:          strings.ToLower(config.HeadlessScheme),
 		cookieKey:       config.CookieKey,
 		cookieTimeout:   config.CookieDuration,
 		bearerTimeout:   config.BearerDuration,
@@ -91,8 +91,8 @@ func NewManager(store tokens.Store, secret []byte, config Config) *Manager {
 }
 
 // NewHeadlessToken creates a new token for headless session access
-func (m *Manager) NewHeadlessToken(r *http.Request, k string, v any) (string, error) {
-	return m.store.Commission(r.Context(), m.headlessTimeout, k, v)
+func (m *Manager) NewHeadlessToken(r *http.Request, v any) (string, error) {
+	return jwt.Encode(m.secret, m.headlessTimeout, v)
 }
 
 // NewBearerToken creates a new token for bearer session access
@@ -125,7 +125,7 @@ func (m *Manager) LoadCookie(r *http.Request, v any) error {
 		return ErrEmptyAuthCookie
 	}
 
-	return m.store.Extend(r.Context(), ck.Value, m.headlessTimeout, v)
+	return m.store.Extend(r.Context(), ck.Value, m.cookieTimeout, v)
 }
 
 // LoadBearer loads a stateful session using the session from key the authorization header.
@@ -139,7 +139,7 @@ func (m *Manager) LoadBearer(r *http.Request, v any) error {
 		return ErrUnsupportedScheme
 	}
 
-	return m.store.Extend(r.Context(), token, m.headlessTimeout, v)
+	return m.store.Extend(r.Context(), token, m.bearerTimeout, v)
 }
 
 // LoadHeadless loads a stateless session from the encoded token in the authorization header.
@@ -159,13 +159,48 @@ func (m *Manager) LoadHeadless(r *http.Request, v any) error {
 // Load to load either bearer, cookie or headless session
 func (m *Manager) Load(r *http.Request, v any) error {
 	err := m.LoadBearer(r, v)
-	if err == ErrEmptyHeader {
+	switch err {
+	case ErrEmptyHeader:
 		return m.LoadCookie(r, v)
-	} else if err == ErrUnsupportedScheme {
+	case ErrUnsupportedScheme:
 		return m.LoadHeadless(r, v)
 	}
 
 	return err
+}
+
+// LogoutCookie clears the authentication cookie
+func (m *Manager) LogoutCookie(r *http.Request, w http.ResponseWriter) error {
+	ck, _ := r.Cookie(m.cookieKey)
+	if ck == nil {
+		return ErrEmptyAuthCookie
+	}
+
+	err := m.store.Revoke(r.Context(), m.cookieKey)
+	if err != nil {
+		return err
+	}
+
+	ck = &http.Cookie{
+		Name:    m.cookieKey,
+		Value:   "",
+		Path:    "/",
+		Expires: time.Unix(0, 0),
+		MaxAge:  -1,
+	}
+
+	http.SetCookie(w, html.SecureCookie(m.isProd, ck))
+
+	return nil
+}
+
+// LogoutBearer revokes a bearer token
+func (m *Manager) LogoutBearer(r *http.Request) error {
+	_, token, err := getAuthorization(r)
+	if err != nil {
+		return err
+	}
+	return m.store.Decommission(r.Context(), token, nil)
 }
 
 func getAuthorization(r *http.Request) (string, string, error) {
