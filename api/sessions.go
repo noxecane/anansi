@@ -7,7 +7,7 @@ import (
 )
 
 func LoadBearer(m *sessions.Manager, r *http.Request, v interface{}) {
-	err := m.LoadBearer(r, v)
+	err := m.FromAuth(r, v)
 	if err == nil {
 		return
 	}
@@ -38,7 +38,7 @@ func LoadBearer(m *sessions.Manager, r *http.Request, v interface{}) {
 }
 
 func LoadCookie(m *sessions.Manager, r *http.Request, v interface{}) {
-	err := m.LoadCookie(r, v)
+	err := m.FromCookie(r, v)
 	if err == nil {
 		return
 	}
@@ -59,7 +59,7 @@ func LoadCookie(m *sessions.Manager, r *http.Request, v interface{}) {
 }
 
 func LoadHeadless(m *sessions.Manager, r *http.Request, v interface{}) {
-	err := m.LoadHeadless(r, v)
+	err := m.FromAuth(r, v)
 	if err == nil {
 		return
 	}
