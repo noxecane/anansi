@@ -320,10 +320,10 @@ This collaborative approach prevents:
 
 ## Git Commit Strategy
 
-When the user asks to "save our work" or create commits, follow this structured approach:
+When organizing work into commits, focus on creating clean, logical commit history rather than just preserving changes. Follow this structured approach:
 
 ### 1. Analyze Changes by Domain
-Use `git status` and `git diff` to examine all staged and unstaged changes. Group changes by:
+**ALWAYS start by examining what actually changed** using `git status` and `git diff` to understand the scope. Group changes by:
 
 **Business/Product Features (`feat:`):**
 - New functionality or enhancements to existing features
@@ -345,11 +345,13 @@ Use `git status` and `git diff` to examine all staged and unstaged changes. Grou
 - Infrastructure and deployment-related changes
 
 ### 2. Create Logical Commit Groups
-Organize related changes into cohesive commits:
+**Never batch unrelated changes together.** Organize related changes into cohesive commits:
 - **Backend changes** (Go handlers, repositories, middleware)
-- **Frontend changes** (Templates, CSS, JavaScript)
+- **Frontend changes** (Templates, CSS, JavaScript)  
 - **Configuration changes** (Environment, build files)
 - **Database changes** (Migrations, schema updates)
+- **Documentation changes** (Separate from code changes)
+- **Type/dependency updates** (Maintenance separate from features)
 
 ### 3. Commit Message Format
 Use conventional commits following email subject best practices:
