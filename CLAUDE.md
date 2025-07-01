@@ -249,29 +249,74 @@ func main() {
 
 This library is designed to be a comprehensive toolkit for Go web applications, providing production-ready components for session management, API development, and request/response handling while maintaining flexibility and performance.
 
-## Debugging Instructions
+## Problem-Solving & Debugging Methodology
 
-When debugging issues in the codebase, follow this systematic approach:
+When the user identifies an issue or problem, follow this unified approach that combines collaborative understanding with systematic debugging:
 
-1. **Identify 5-7 potential sources** of the issue:
-   - List all possible causes based on error messages and symptoms
-   - Consider parameter mismatches, data format differences, timing issues
-   - Think about external dependencies (Redis, database, network)
-   - Include context/configuration problems
+### Phase 1: Collaborative Investigation (NEVER skip this)
 
-2. **Select the top 1-2 most likely sources**:
-   - Prioritize based on probability and impact
-   - Focus on the most common failure patterns first
+**NEVER immediately implement solutions. Always start with:**
 
-3. **Add targeted logging to validate assumptions**:
+1. **Collaborate on Understanding**: Work together to understand the root cause
+2. **Gather Observations**: Ask clarifying questions about symptoms, timing, and context
+3. **Map the Problem Space**: Identify 5-7 potential sources of the issue:
+   - Parameter mismatches, data format differences, timing issues
+   - External dependencies (Redis, database, network, authentication)
+   - Context/configuration problems, middleware interactions
+   - State management, session handling, routing issues
+
+### Phase 2: Hypothesis Formation & Testing
+
+4. **Prioritize Hypotheses**: Select the top 1-2 most likely sources based on probability and impact
+5. **Design Experiments**: Plan targeted investigation approach:
    - Add temporary `fmt.Printf` statements at key points
    - Log input/output values, state changes, and external calls
-   - Validate your hypothesis with concrete data
+   - Use debugging tools to trace request/response flow
+6. **Test Hypotheses**: Validate assumptions with concrete data
 
-4. **Clean up and implement fix**:
+### Phase 3: Solution Implementation
+
+7. **Propose Plan**: Present a clear plan for solving the problem based on findings
+8. **Wait for Approval**: Only implement after the user confirms the plan
+9. **Clean Implementation**: 
    - Remove all debugging logging before committing
    - Implement the validated solution
    - Add tests to prevent regression
+
+### Examples
+
+**❌ WRONG approach:**
+```
+User: "Adding to cart leads to a 401"
+Assistant: *immediately starts editing authentication code*
+```
+
+**✅ CORRECT approach:**
+```
+User: "Adding to cart leads to a 401"
+Assistant: "Let me understand what's happening. When exactly does the 401 occur? 
+Let's trace through the cart endpoints - are they supposed to require authentication? 
+Let me examine the routing and middleware setup first."
+```
+
+### Defend the Scientific Process
+
+**Always prioritize observation and data gathering over speed, unless explicitly urgent:**
+- Investigation may feel slower initially, but prevents costly wrong turns
+- Assumptions are often incorrect and lead to wasted implementation time
+- Proper investigation builds better understanding of the system
+- Data-driven decisions are more reliable than intuition-based ones
+
+**Only skip the investigation phase when:**
+- User explicitly states "this is urgent, just implement X"
+- The problem and solution are both clearly defined and verified
+- Time constraints are critical and user accepts the risk of potential rework
+
+This collaborative approach prevents:
+- Solving the wrong problem
+- Missing the actual root cause  
+- Implementing unnecessary changes
+- Wasting time on incorrect assumptions
 
 ## Git Commit Strategy
 
