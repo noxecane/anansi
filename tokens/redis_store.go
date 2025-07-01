@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	ErrTokenNotFound = errors.New("The passed token has either expired or never existed")
+	ErrTokenNotFound = errors.New("the passed token has either expired or never existed")
 )
 
 type store struct {
@@ -23,18 +23,18 @@ type store struct {
 
 type Store interface {
 	// Commission creates a single use token that expires after the given timeout.
-	Commission(ctx context.Context, t time.Duration, k string, v interface{}) (string, error)
+	Commission(ctx context.Context, t time.Duration, k string, v any) (string, error)
 	// Peek gets the data the token references without changing its lifetime.
-	Peek(ctx context.Context, token string, v interface{}) error
+	Peek(ctx context.Context, token string, v any) error
 	// Extend sets the new duration before an existing token times out. Note that it doesn't
 	// take into account how long the old token had to expire, as it uses the new duration
 	// entirely.
-	Extend(ctx context.Context, token string, t time.Duration, v interface{}) error
+	Extend(ctx context.Context, token string, t time.Duration, v any) error
 	// Reset changes the contents of the token without changing it's TTL
-	Reset(ctx context.Context, k string, v interface{}) error
+	Reset(ctx context.Context, k string, v any) error
 	// Decommission loads the value referenced by the token and dispenses of the token,
 	// making it unvailable for further use.
-	Decommission(ctx context.Context, token string, v interface{}) error
+	Decommission(ctx context.Context, token string, v any) error
 	// Revoke renders the token generated for the given key useless.
 	Revoke(ctx context.Context, key string) error
 }
@@ -43,7 +43,7 @@ func NewStore(r *redis.Client, secret []byte) Store {
 	return &store{redis: r, secret: secret}
 }
 
-func (ts *store) Commission(ctx context.Context, t time.Duration, key string, v interface{}) (string, error) {
+func (ts *store) Commission(ctx context.Context, t time.Duration, key string, v any) (string, error) {
 	var encoded []byte
 	var err error
 	var token string
@@ -66,11 +66,11 @@ func (ts *store) Commission(ctx context.Context, t time.Duration, key string, v 
 	return token, nil
 }
 
-func (ts *store) Peek(ctx context.Context, token string, data interface{}) error {
+func (ts *store) Peek(ctx context.Context, token string, data any) error {
 	return ts.peekToken(ctx, token, data)
 }
 
-func (ts *store) Extend(ctx context.Context, token string, timeout time.Duration, data interface{}) error {
+func (ts *store) Extend(ctx context.Context, token string, timeout time.Duration, data any) error {
 	var ok bool
 	var err error
 
@@ -89,7 +89,7 @@ func (ts *store) Extend(ctx context.Context, token string, timeout time.Duration
 	return nil
 }
 
-func (ts *store) Reset(ctx context.Context, key string, data interface{}) error {
+func (ts *store) Reset(ctx context.Context, key string, data any) error {
 	var err error
 	var encoded []byte
 	var token string
@@ -127,7 +127,7 @@ func (ts *store) Reset(ctx context.Context, key string, data interface{}) error 
 	return nil
 }
 
-func (ts *store) Decommission(ctx context.Context, token string, data interface{}) error {
+func (ts *store) Decommission(ctx context.Context, token string, data any) error {
 	var err error
 
 	if err = ts.peekToken(ctx, token, data); err != nil {
@@ -165,7 +165,7 @@ func (ts *store) Revoke(ctx context.Context, key string) error {
 	return nil
 }
 
-func (ts *store) peekToken(ctx context.Context, tokenKey string, data interface{}) error {
+func (ts *store) peekToken(ctx context.Context, tokenKey string, data any) error {
 	var encoded string
 	var err error
 
