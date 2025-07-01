@@ -9,7 +9,7 @@ import (
 )
 
 // LoadEnv loads environment variables into env
-func LoadEnv(env interface{}) error {
+func LoadEnv(env any) error {
 	// try to load from .env first
 	err := godotenv.Load()
 	if err != nil {
