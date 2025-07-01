@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"github.com/noxecane/anansi/jwt"
 	"github.com/noxecane/anansi/tokens"
 )
+
+var ClearCookie struct{}
 
 const (
 	DefaultSessionKey      = "anansi_session"
@@ -47,7 +50,7 @@ type Config struct {
 	// The scheme to recognise for headless requests. defaults to
 	// DefaultHeadlessScheme
 	HeadlessScheme string
-	// How long each headless session should last Config.BearerDuration
+	// How long each headless session should last. Defaults to one hour
 	HeadlessDuration time.Duration
 	// How long bearer sessions should last. Defaults to DefaultSessionDuration
 	BearerDuration time.Duration
@@ -82,7 +85,7 @@ func NewManager(store tokens.Store, secret []byte, config Config) *Manager {
 		store:           store,
 		secret:          secret,
 		isProd:          config.IsProduction,
-		scheme:          strings.ToLower(config.HeadlessScheme),
+		scheme:          config.HeadlessScheme,
 		cookieKey:       config.CookieKey,
 		cookieTimeout:   config.CookieDuration,
 		bearerTimeout:   config.BearerDuration,
@@ -90,83 +93,73 @@ func NewManager(store tokens.Store, secret []byte, config Config) *Manager {
 	}
 }
 
-// NewHeadlessToken creates a new token for headless session access
-func (m *Manager) NewHeadlessToken(r *http.Request, v any) (string, error) {
+// NewSession creates a new stateful session with the given sessionID
+func (m *Manager) NewSession(ctx context.Context, sessionID string, v any) (string, error) {
+	return m.store.Commission(ctx, m.cookieTimeout, sessionID, v)
+}
+
+// NewHeadlessSession creates a new stateless session token
+func (m *Manager) NewHeadlessSession(v any) (string, error) {
 	return jwt.Encode(m.secret, m.headlessTimeout, v)
 }
 
-// NewBearerToken creates a new token for bearer session access
-func (m *Manager) NewBearerToken(r *http.Request, k string, v any) (string, error) {
-	return m.store.Commission(r.Context(), m.bearerTimeout, k, v)
-}
-
-// NewRestrictedCookieSession creates and writes a cookie that gives access to the session only
-// on the specified path. This is useful for limiting the scope of the session
-func (m *Manager) NewStrictedCookieSession(r *http.Request, w http.ResponseWriter, path string, v any) error {
-	token, err := m.store.Commission(r.Context(), m.cookieTimeout, m.cookieKey, v)
-	if err != nil {
-		return err
-	}
+// ToCookie writes a session token to an HTTP cookie
+func (m *Manager) ToCookie(w http.ResponseWriter, token string, path string) {
 	ck := &http.Cookie{Name: m.cookieKey, Value: token, Path: path}
 	http.SetCookie(w, html.SecureCookie(m.isProd, ck))
-
-	return nil
 }
 
-// NewCookieSession creates and writes a cookie that gives access to the session
-func (m *Manager) NewCookieSession(r *http.Request, w http.ResponseWriter, v any) error {
-	return m.NewStrictedCookieSession(r, w, "/", v)
+// ToAuth writes a session token to the Authorization header
+func (m *Manager) ToAuth(w http.ResponseWriter, token string, isHeadless bool) {
+	scheme := "Bearer"
+	if isHeadless {
+		scheme = m.scheme
+	}
+	w.Header().Set("Authorization", scheme+" "+token)
 }
 
-// LoadCookie loads a stateful session from the request's cookie.
-func (m *Manager) LoadCookie(r *http.Request, v any) error {
+// FromCookie loads a session from the request's cookie
+func (m *Manager) FromCookie(r *http.Request, v any) error {
 	ck, _ := r.Cookie(m.cookieKey)
 	if ck == nil {
 		return ErrEmptyAuthCookie
 	}
-
 	return m.store.Extend(r.Context(), ck.Value, m.cookieTimeout, v)
 }
 
-// LoadBearer loads a stateful session using the session from key the authorization header.
-func (m *Manager) LoadBearer(r *http.Request, v any) error {
+// FromAuth loads a session from the Authorization header (supports both bearer and headless)
+func (m *Manager) FromAuth(r *http.Request, v any) error {
 	scheme, token, err := getAuthorization(r)
 	if err != nil {
 		return err
 	}
 
-	if scheme != "bearer" {
+	switch scheme {
+	case "bearer":
+		return m.store.Extend(r.Context(), token, m.bearerTimeout, v)
+	case strings.ToLower(m.scheme):
+		return jwt.Decode(m.secret, token, v)
+	default:
 		return ErrUnsupportedScheme
 	}
-
-	return m.store.Extend(r.Context(), token, m.bearerTimeout, v)
 }
 
-// LoadHeadless loads a stateless session from the encoded token in the authorization header.
-func (m *Manager) LoadHeadless(r *http.Request, v any) error {
-	scheme, token, err := getAuthorization(r)
-	if err != nil {
-		return err
-	}
-
-	if scheme != m.scheme {
-		return ErrUnsupportedScheme
-	}
-
-	return jwt.Decode(m.secret, token, v)
-}
-
-// Load to load either bearer, cookie or headless session
+// Load attempts to load a session from either Authorization header or cookie
 func (m *Manager) Load(r *http.Request, v any) error {
-	err := m.LoadBearer(r, v)
+	err := m.FromAuth(r, v)
 	switch err {
 	case ErrEmptyHeader:
-		return m.LoadCookie(r, v)
-	case ErrUnsupportedScheme:
-		return m.LoadHeadless(r, v)
+		return m.FromCookie(r, v)
+	case nil:
+		return nil
+	default:
+		// Try cookie fallback for other auth errors
+		if cookieErr := m.FromCookie(r, v); cookieErr == nil {
+			return nil
+		}
+		// Return original auth error if cookie also fails
+		return err
 	}
-
-	return err
 }
 
 // LogoutCookie clears the authentication cookie
@@ -176,7 +169,7 @@ func (m *Manager) LogoutCookie(r *http.Request, w http.ResponseWriter) error {
 		return ErrEmptyAuthCookie
 	}
 
-	err := m.store.Revoke(r.Context(), m.cookieKey)
+	err := m.store.Decommission(r.Context(), ck.Value, &ClearCookie)
 	if err != nil {
 		return err
 	}
@@ -194,13 +187,17 @@ func (m *Manager) LogoutCookie(r *http.Request, w http.ResponseWriter) error {
 	return nil
 }
 
-// LogoutBearer revokes a bearer token
-func (m *Manager) LogoutBearer(r *http.Request) error {
-	_, token, err := getAuthorization(r)
+// LogoutAuth revokes a session token from Authorization header
+func (m *Manager) LogoutAuth(r *http.Request) error {
+	scheme, token, err := getAuthorization(r)
 	if err != nil {
 		return err
 	}
-	return m.store.Decommission(r.Context(), token, nil)
+	// Only revoke stateful tokens (bearer), headless tokens are stateless
+	if scheme == "bearer" {
+		return m.store.Decommission(r.Context(), token, &ClearCookie)
+	}
+	return nil // Headless tokens don't need revocation
 }
 
 func getAuthorization(r *http.Request) (string, string, error) {

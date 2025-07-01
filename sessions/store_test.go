@@ -82,14 +82,14 @@ func Test_getAuthorization(t *testing.T) {
 	})
 }
 
-func TestLoadBearer(t *testing.T) {
+func TestFromAuth(t *testing.T) {
 	type session struct {
 		Name string
 	}
 
-	manager := NewManager(sharedTestStore, secret, Config{BearerDuration: time.Minute})
+	manager := NewManager(sharedTestStore, secret, Config{BearerDuration: time.Minute, HeadlessScheme: scheme})
 
-	t.Run("loads the bearer session", func(t *testing.T) {
+	t.Run("loads bearer session from auth header", func(t *testing.T) {
 		defer flushRedis(context.TODO(), t)
 
 		token, err := sharedTestStore.Commission(context.TODO(), time.Minute, "key", session{"Premium"})
@@ -101,7 +101,7 @@ func TestLoadBearer(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer "+token)
 
 		var s session
-		if err := manager.LoadBearer(req, &s); err != nil {
+		if err := manager.FromAuth(req, &s); err != nil {
 			t.Fatal(err)
 		}
 
@@ -110,40 +110,73 @@ func TestLoadBearer(t *testing.T) {
 		}
 	})
 
-	t.Run("fails if scheme is not Bearer", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/entities", nil)
-		req.Header.Set("Authorization", scheme+" engagement")
-
-		err := manager.LoadBearer(req, &session{})
-		if err == nil {
-			t.Error("Expected LoadBearer to fail with error")
-		}
-
-		if err != ErrUnsupportedScheme {
-			t.Errorf("Expected error from LoadBearer to be ErrUnsupportedScheme, got %s", err)
-		}
-	})
-}
-
-func TestLoadHeadless(t *testing.T) {
-	type session struct {
-		Name string
-	}
-
-	customScheme := "Premium"
-	manager := NewManager(sharedTestStore, secret, Config{HeadlessScheme: customScheme})
-
-	t.Run("loads the headless session", func(t *testing.T) {
-		token, err := jwt.Encode(secret, time.Minute, session{"Premium"})
+	t.Run("loads headless session from auth header", func(t *testing.T) {
+		token, err := jwt.Encode(secret, time.Minute, session{"Headless"})
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		req := httptest.NewRequest("GET", "/entities", nil)
-		req.Header.Set("Authorization", customScheme+" "+token)
+		req.Header.Set("Authorization", scheme+" "+token)
 
 		var s session
-		if err := manager.LoadHeadless(req, &s); err != nil {
+		if err := manager.FromAuth(req, &s); err != nil {
+			t.Fatal(err)
+		}
+
+		if s.Name != "Headless" {
+			t.Errorf(`Expected name in session to be "%s", got %s`, "Headless", s.Name)
+		}
+	})
+
+	t.Run("fails if scheme is unsupported", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/entities", nil)
+		req.Header.Set("Authorization", "Unknown engagement")
+
+		err := manager.FromAuth(req, &session{})
+		if err == nil {
+			t.Error("Expected FromAuth to fail with error")
+		}
+
+		if err != ErrUnsupportedScheme {
+			t.Errorf("Expected error from FromAuth to be ErrUnsupportedScheme, got %s", err)
+		}
+	})
+}
+
+func TestNewSessionAndFromCookie(t *testing.T) {
+	type session struct {
+		Name string
+	}
+
+	manager := NewManager(sharedTestStore, secret, Config{CookieDuration: time.Minute})
+
+	t.Run("creates session and loads from cookie", func(t *testing.T) {
+		defer flushRedis(context.TODO(), t)
+
+		// Create session with unique ID
+		token, err := manager.NewSession(context.TODO(), "user-123", session{"Premium"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Write to cookie
+		w := httptest.NewRecorder()
+		manager.ToCookie(w, token, "/")
+
+		// Extract cookie from response
+		cookies := w.Result().Cookies()
+		if len(cookies) == 0 {
+			t.Fatal("Expected cookie to be set")
+		}
+
+		// Create request with cookie
+		req := httptest.NewRequest("GET", "/entities", nil)
+		req.AddCookie(cookies[0])
+
+		// Load from cookie
+		var s session
+		if err := manager.FromCookie(req, &s); err != nil {
 			t.Fatal(err)
 		}
 
@@ -152,18 +185,16 @@ func TestLoadHeadless(t *testing.T) {
 		}
 	})
 
-	t.Run("fails if scheme is not set headless scheme", func(t *testing.T) {
-		token := "engagement"
+	t.Run("fails when no cookie is present", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/entities", nil)
-		req.Header.Set("Authorization", "Bearer "+token)
 
-		err := manager.LoadHeadless(req, &session{})
+		err := manager.FromCookie(req, &session{})
 		if err == nil {
-			t.Error("Expected LoadHeadless to fail with error")
+			t.Error("Expected FromCookie to fail with error")
 		}
 
-		if err != ErrUnsupportedScheme {
-			t.Errorf("Expected error from LoadHeadless to be ErrUnsupportedScheme, got %s", err)
+		if err != ErrEmptyAuthCookie {
+			t.Errorf("Expected error to be ErrEmptyAuthCookie, got %s", err)
 		}
 	})
 }
@@ -182,10 +213,12 @@ func TestLogoutCookie(t *testing.T) {
 		req := httptest.NewRequest("GET", "/entities", nil)
 		w := httptest.NewRecorder()
 
-		err := manager.NewCookieSession(req, w, session{"Premium"})
+		// Create session and write to cookie
+		token, err := manager.NewSession(req.Context(), "user-123", session{"Premium"})
 		if err != nil {
 			t.Fatal(err)
 		}
+		manager.ToCookie(w, token, "/")
 
 		// Extract the cookie from the response
 		cookies := w.Result().Cookies()
@@ -224,9 +257,9 @@ func TestLogoutCookie(t *testing.T) {
 		loadReq.AddCookie(cookie)
 
 		var s session
-		err = manager.LoadCookie(loadReq, &s)
+		err = manager.FromCookie(loadReq, &s)
 		if err == nil {
-			t.Error("Expected LoadCookie to fail after logout")
+			t.Error("Expected FromCookie to fail after logout")
 		}
 	})
 
@@ -245,19 +278,18 @@ func TestLogoutCookie(t *testing.T) {
 	})
 }
 
-func TestLogoutBearer(t *testing.T) {
+func TestLogoutAuth(t *testing.T) {
 	type session struct {
 		Name string
 	}
 
-	manager := NewManager(sharedTestStore, secret, Config{BearerDuration: time.Minute})
+	manager := NewManager(sharedTestStore, secret, Config{BearerDuration: time.Minute, HeadlessScheme: scheme})
 
 	t.Run("revokes bearer token", func(t *testing.T) {
 		defer flushRedis(context.TODO(), t)
 
 		// Create a bearer token
-		req := httptest.NewRequest("GET", "/entities", nil)
-		token, err := manager.NewBearerToken(req, "test-key", session{"Premium"})
+		token, err := manager.NewSession(context.TODO(), "test-key", session{"Premium"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -267,7 +299,7 @@ func TestLogoutBearer(t *testing.T) {
 		logoutReq.Header.Set("Authorization", "Bearer "+token)
 
 		// Logout
-		err = manager.LogoutBearer(logoutReq)
+		err = manager.LogoutAuth(logoutReq)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -277,18 +309,35 @@ func TestLogoutBearer(t *testing.T) {
 		loadReq.Header.Set("Authorization", "Bearer "+token)
 
 		var s session
-		err = manager.LoadBearer(loadReq, &s)
+		err = manager.FromAuth(loadReq, &s)
 		if err == nil {
-			t.Error("Expected LoadBearer to fail after logout")
+			t.Error("Expected FromAuth to fail after logout")
+		}
+	})
+
+	t.Run("does not fail for headless tokens (stateless)", func(t *testing.T) {
+		token, err := manager.NewHeadlessSession(session{"Headless"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Create request with headless token
+		logoutReq := httptest.NewRequest("POST", "/logout", nil)
+		logoutReq.Header.Set("Authorization", scheme+" "+token)
+
+		// Logout should succeed (no-op for headless)
+		err = manager.LogoutAuth(logoutReq)
+		if err != nil {
+			t.Fatal(err)
 		}
 	})
 
 	t.Run("fails when no authorization header is present", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/logout", nil)
 
-		err := manager.LogoutBearer(req)
+		err := manager.LogoutAuth(req)
 		if err == nil {
-			t.Error("Expected LogoutBearer to fail with error")
+			t.Error("Expected LogoutAuth to fail with error")
 		}
 
 		if err != ErrEmptyHeader {
@@ -300,9 +349,9 @@ func TestLogoutBearer(t *testing.T) {
 		req := httptest.NewRequest("POST", "/logout", nil)
 		req.Header.Set("Authorization", "Bearer")
 
-		err := manager.LogoutBearer(req)
+		err := manager.LogoutAuth(req)
 		if err == nil {
-			t.Error("Expected LogoutBearer to fail with error")
+			t.Error("Expected LogoutAuth to fail with error")
 		}
 
 		if err != ErrHeaderFormat {
