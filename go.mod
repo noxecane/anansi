@@ -9,7 +9,7 @@ require (
 	github.com/go-jose/go-jose/v3 v3.0.4
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/go-playground/mold/v4 v4.5.0
-	github.com/go-viper/mapstructure/v2 v2.3.0
+	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/joho/godotenv v1.5.1
 	github.com/json-iterator/go v1.1.12
