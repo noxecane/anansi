@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/go-chi/chi/v5 v5.2.2
-	github.com/go-jose/go-jose/v3 v3.0.4
+	github.com/go-jose/go-jose/v3 v3.0.5
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/go-playground/mold/v4 v4.5.0
 	github.com/go-viper/mapstructure/v2 v2.4.0
