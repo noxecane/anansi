@@ -1,8 +1,6 @@
 module github.com/noxecane/anansi
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.25.0
 
 require (
 	github.com/go-chi/chi/v5 v5.2.4
@@ -19,7 +17,7 @@ require (
 	github.com/rs/cors v1.8.0
 	github.com/rs/zerolog v1.31.0
 	github.com/segmentio/ksuid v1.0.4
-	golang.org/x/crypto v0.45.0
+	golang.org/x/crypto v0.52.0
 	syreclabs.com/go/faker v1.2.3
 )
 
@@ -44,7 +42,7 @@ require (
 	github.com/segmentio/go-camelcase v0.0.0-20160726192923-7085f1e3c734 // indirect
 	github.com/segmentio/go-snakecase v1.2.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/text v0.31.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )
